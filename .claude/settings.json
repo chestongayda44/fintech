@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__jupyter",
+      "Bash(python -m pytest:*)",
+      "Bash(pytest:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(go run:*)",
+      "Bash(go test:*)",
+      "WebSearch",
+      "WebFetch(domain:fred.stlouisfed.org)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Bash(cat .env:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_secrets.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

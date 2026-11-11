@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+node_modules/
+dist/
+data/published/
+data/cache/
+*.egg-info/
+.DS_Store
+
+# Downloaded FRED data is local-only (public data; regenerate with scripts/fetch_seed.py).
+# Ignored so resets and branch switches never delete or conflict with it.
+data/seed/*.csv
+data/seed/published/
