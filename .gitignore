@@ -17,3 +17,7 @@ data/cache/
 # Ignored so resets and branch switches never delete or conflict with it.
 data/seed/*.csv
 data/seed/published/
+
+# JupyterLab collaboration state
+.jupyter_ystore.db
+**/.jupyter/
