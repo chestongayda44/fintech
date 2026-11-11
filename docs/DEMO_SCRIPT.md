@@ -10,7 +10,7 @@ across three teams, in one tool.
 |---|---|---|---|---|
 | 0 | Setup proof | all | 0:30 | — |
 | 1 | Acquire | `ds` · Vertex* | 2:00 | `s1-start` |
-| 2 | Clean & explore | `ds` · Vertex* | 2:30 | |
+| 2 | Clean & explore | `ds` · Vertex* | 1:30 | |
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 
@@ -23,6 +23,7 @@ The stage needs no web search, so it behaves the same on either cloud.
 
 ## Pre-flight (before the meeting)
 - [ ] `scripts/demo-reset.sh` → on `demo-live` at `s1-start`
+- [ ] Start JupyterLab: `jupyter lab notebooks/` — copy the token from the terminal output and set `JUPYTER_TOKEN` in `.env` (also set `JUPYTER_URL` if not using the default `http://localhost:8888`)
 - [ ] JupyterLab running; notebook open; kernel restarted; **File → Reload Notebook from Disk**
 - [ ] `ds` session: `/mcp` shows `jupyter` connected; `/status` shows the intended provider (Vertex, or Bedrock if `DS_PROVIDER=bedrock`)
 - [ ] Vertex smoke test passes (one short prompt) if using Vertex — quota can silently be 0 on new projects
@@ -65,12 +66,10 @@ the `"."` missing-value handling; key read from env, never shown.
 ```
 Align everything to a gap-free quarterly panel (charge-offs and delinquency are quarterly, the rest
 monthly; average the available months, at least 2 of 3), add YoY CPI inflation, then chart
-unemployment against charge-offs and delinquency, shading the 2008 and 2020 recessions. Quick aside: is the Phillips curve flatter than it
-used to be? One chart.
+unemployment against charge-offs and delinquency, shading the 2008 and 2020 recessions.
 ```
 **Point out:** mixed frequencies handled correctly; the real-world gap (a missing FRED month in late
-2025) handled instead of silently corrupting the lags;
-the Phillips aside answered in seconds: "new questions are cheap now."
+2025) handled instead of silently corrupting the lags.
 
 ## 3 · Model & stress (2:30) — `ds`
 **Prompt:**
