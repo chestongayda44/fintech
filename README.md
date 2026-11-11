@@ -39,11 +39,17 @@ source scripts/personas.sh      # in each terminal
 ds    # Data Science (Vertex)    swe   # SWE (Bedrock)    sre   # SRE (Bedrock)
 ```
 
+## Dashboard
+```bash
+bash scripts/start-dashboard.sh   # loads .env, installs on first run, opens http://localhost:5173
+```
+
 ## Checkpoints (fallbacks)
 | tag | state |
 |---|---|
-| `s1-start` | scaffold only; notebook has a title cell; no `risk_model/` |
+| `s1-start` | scaffold + dashboard shell; notebook has a title cell; no `risk_model/` |
 | `s2-done` | DS stage complete: notebook, `risk_model/` package + tests, published artifacts |
+| `s3-done` | SWE stage complete: dashboard stress panel + parity tests |
 
 `scripts/demo-reset.sh [tag]` puts the repo on branch `demo-live` at that tag (main untouched),
 keeps your downloaded `data/seed/`, and re-seeds the bucket from `data/seed/published/`. After a full dry run, copy
@@ -53,3 +59,6 @@ keeps your downloaded `data/seed/`, and re-seeds the bucket from `data/seed/publ
 ```bash
 python -m pytest -q
 ```
+
+After pulling changes that complete a stage, run `bash scripts/update-checkpoints.sh --push` on `main`
+to move the checkpoint tags (commits are marked `[checkpoint:<tag>]`).

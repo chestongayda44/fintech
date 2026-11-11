@@ -13,11 +13,11 @@ across three teams, in one tool.
 | 2 | Clean & explore | `ds` · Vertex* | 1:30 | |
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
+| 5 | Dashboard | `swe` · Bedrock | 3:30 | `s3-done` |
+| 6 | Incident & ship | `sre` · Bedrock | 2:30 | `s4-done` (Phase 4) |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
-| 5 | Dashboard | `swe` · Bedrock | 3:30 | `s3-done` (Phase 3) |
-| 6 | Incident & ship | `sre` · Bedrock | 2:30 | `s4-done` (Phase 4) |
 
 ---
 
@@ -30,6 +30,8 @@ The stage needs no web search, so it behaves the same on either cloud.
 - [ ] Vertex smoke test passes (one short prompt) if using Vertex — quota can silently be 0 on new projects
 - [ ] `swe`/`sre` sessions: `/status` shows Bedrock; `aws sso login` fresh
 - [ ] `data/seed/*.csv` present (real FRED); `DATA_SOURCE=gcs`, bucket seeded
+- [ ] `bash scripts/start-dashboard.sh` running; browser on http://localhost:5173 showing the empty
+      "Stress scenarios" slot (it reads whatever the DS stage publishes)
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -113,7 +115,36 @@ and green tests.
 **Point out:** notebook → tested code is the handoff that usually takes a sprint. The published payload
 in GCS is what SWE builds on next.
 
-## 5 · Dashboard — `swe` (Phase 3, to be built)
+## 5 · Dashboard (3:30) — `swe` · Bedrock
+Switch to the `swe` terminal (`/status` shows Bedrock) and put the browser beside it, open on the
+dashboard. Its empty "Stress scenarios" slot is the ticket.
+
+**Prompt (start in plan mode, Shift+Tab):**
+```
+Risk leadership wants to explore this themselves. In dashboard/, fill the empty "Stress scenarios"
+slot with a stress panel: a slider for an unemployment rise from 0 to 5 points (phased in over a
+year), the no-shock and stressed charge-off paths against recent history, and a one-sentence
+headline with the peak impact. Compute projections in the browser from the published payload,
+following the projection rule in docs/DATA_CONTRACT.md, and add Vitest tests proving the
+TypeScript matches the scenarios the Python model published.
+```
+Approve the plan, let it implement, then `npm test`.
+
+**Point out:**
+- Plan mode: the approval step before any code changes (governance your security team asked about).
+- The panel appears in the browser *while Claude edits* (dev server hot reload). Drag the slider:
+  the headline sentence and both charts move together.
+- The parity tests: TypeScript reproduces the Python model's published scenarios to 3 decimals.
+  "The dashboard can't quietly disagree with the model. A test fails first."
+- Same CLAUDE.md, same data contract, different team, different cloud.
+
+**Expected:** at +2 points, peak impact ≈ +1.9 to +2.2 points of charge-offs in 2027 Q4 (matches stage 3).
+**Fallback:** `scripts/demo-reset.sh s3-done`, reload the browser, demo the finished panel.
+**Scoreboard:** "Interactive feature + tests, no front-end specialist: typical 2–3 days → elapsed ~4 min."
+
+**Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
+product your CRO can use, built by an engineer in their own stack, checked against the model."
+
 ## 6 · Incident & ship — `sre` (Phase 4, to be built)
 
 ---
