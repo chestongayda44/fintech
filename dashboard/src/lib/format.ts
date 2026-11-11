@@ -17,3 +17,9 @@ export function pct(value: number | null | undefined, digits = 2): string {
 export function points(value: number, digits = 1): string {
   return `${value.toFixed(digits)} ${Math.abs(value) === 1 ? "point" : "points"}`;
 }
+
+/** Compound adjective: 2 -> "2.0-point", 3.5 -> "3.5-point", 2.25 -> "2.25-point". */
+export function pointRise(value: number): string {
+  const n = Number.isInteger(value) ? value.toFixed(1) : String(Number(value.toFixed(2)));
+  return `${n}-point`;
+}

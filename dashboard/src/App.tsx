@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { HistoryCharts } from "./components/HistoryCharts";
 import { ModelNotes } from "./components/ModelNotes";
+import { StressPanel } from "./components/StressPanel";
 import { pct, quarterLabel } from "./lib/format";
 import { loadPayload, PayloadError } from "./lib/payload";
 import type { StressPayload } from "./types";
@@ -45,19 +46,13 @@ function Dashboard({ payload }: { payload: StressPayload }) {
   const last = payload.last_observed;
   return (
     <>
-      <p className="lead">
-        Card charge-offs are <strong className="is-chargeoff">{pct(last.chargeoff)}</strong> with unemployment at{" "}
+      <p className="lead lead-quiet">
+        Card charge‑offs are <strong className="is-chargeoff">{pct(last.chargeoff)}</strong> with unemployment at{" "}
         <strong>{pct(last.unrate)}</strong>.
       </p>
       <p className="sublead">Latest quarter: {quarterLabel(last.date)}. US commercial banks, seasonally adjusted.</p>
 
-      {/* STRESS-PANEL: scenario controls and projections go here (SWE stage). */}
-      <section aria-label="Stress scenarios" className="slot">
-        <p>
-          Stress scenarios aren't built yet. The published model below has everything they need: coefficients, the
-          last five quarters of unemployment, and the projection rule in docs/DATA_CONTRACT.md.
-        </p>
-      </section>
+      <StressPanel payload={payload} />
 
       <HistoryCharts payload={payload} />
       <ModelNotes payload={payload} />

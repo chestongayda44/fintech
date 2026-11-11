@@ -133,3 +133,18 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Stress panel (SWE stage) */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.stress { padding: 28px 0 8px; border-top: 1px solid var(--rule); }
+.stress-lead { max-width: 36ch; min-height: 2.4em; font-size: clamp(2rem, 3.8vw, 3rem); }
+.lead-quiet { font-size: clamp(1.375rem, 2.2vw, 1.75rem); max-width: 40ch; }
+.control { margin: 8px 0 28px; max-width: 560px; }
+.control label { display: block; font-weight: 600; font-size: 0.9375rem; margin-bottom: 8px; }
+.control-row { display: flex; align-items: center; gap: 16px; }
+.control input[type="range"] { flex: 1; accent-color: var(--shock); height: 28px; cursor: pointer; }
+.control-value {
+  min-width: 6.5ch; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--ink); font-size: 1.0625rem;
+}
+.control-note { font-size: 0.875rem; color: var(--ink-2); margin: 6px 0 0; }

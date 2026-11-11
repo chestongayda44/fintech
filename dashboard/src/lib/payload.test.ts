@@ -44,3 +44,12 @@ describe("format", () => {
     expect(quarterTick("2027-10-01")).toBe("Q4 '27");
   });
 });
+
+describe("pointRise", () => {
+  it("reads as a compound adjective", async () => {
+    const { pointRise } = await import("./format");
+    expect(pointRise(2)).toBe("2.0-point");
+    expect(pointRise(2.25)).toBe("2.25-point");
+    expect(pointRise(3.5)).toBe("3.5-point");
+  });
+});
