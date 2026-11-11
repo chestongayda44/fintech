@@ -1,0 +1,16 @@
+[project]
+name = "risk-model"
+version = "0.1.0"
+description = "FinTechCo macro credit stress model (demo)"
+requires-python = ">=3.11"
+dependencies = ["pandas>=2.2", "numpy>=1.26", "statsmodels>=0.14", "requests>=2.31"]
+
+[project.optional-dependencies]
+gcs = ["google-cloud-storage>=2.16"]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["risk_model"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "risk_model/tests"]
