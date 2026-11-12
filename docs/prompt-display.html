@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinTechCo × Claude Code: what Claude was asked</title>
+<style>
+  :root {
+    --paper: #E9EDE7;
+    --sheet: #F6F7F3;
+    --ink: #17212E;
+    --muted: #5A6472;
+    --rule: #CCD3CB;
+    --team: #3A4656;
+    --sans: "Avenir Next", "Avenir", "Segoe UI", system-ui, sans-serif;
+    --mono: "SF Mono", "Menlo", "Consolas", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+  body { display: grid; grid-template-columns: minmax(170px, 15vw) 1fr; height: 100vh; overflow: hidden; }
+
+  nav { padding: 3.2vh 1.4vw; display: flex; flex-direction: column; gap: 0.2rem; overflow: hidden; }
+  nav .stage { display: grid; grid-template-columns: 1.8em 1fr; align-items: baseline; margin-top: 1.1vh; }
+  nav .num { font-size: 1.05rem; font-weight: 600; color: var(--muted); }
+  nav ol { list-style: none; margin: 0; padding: 0; }
+  nav button {
+    all: unset; cursor: pointer; display: block; width: 100%; padding: 0.22rem 0.5rem; border-radius: 4px;
+    font-family: var(--mono); font-size: 0.9rem; color: var(--muted); border-left: 3px solid transparent;
+  }
+  nav button:hover { color: var(--ink); }
+  nav button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  nav button.label { font-family: var(--sans); font-size: 0.95rem; }
+  nav button[aria-current="step"] { color: var(--ink); background: var(--sheet); border-left-color: var(--team); font-weight: 600; }
+  nav .done { color: #8C95A0; }
+
+  main { padding: 3.2vh 3.2vw 3.2vh 1vw; display: flex; min-width: 0; min-height: 0; }
+  .sheet {
+    flex: 1; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; background: var(--sheet);
+    border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 var(--rule);
+  }
+  .band { background: var(--team); color: #fff; padding: 2.2vh 3vw 2.4vh; transition: background-color 250ms ease; }
+  .who { font-size: clamp(1rem, 1.6vw, 1.6rem); font-weight: 500; opacity: 0.92; }
+  .who b { font-weight: 700; }
+  .head {
+    margin: 0.6vh 0 0; font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
+    font-size: clamp(2.4rem, 6.2vw, 6.4rem); line-height: 1.05;
+  }
+  .head.title { font-family: var(--sans); font-weight: 700; letter-spacing: -0.02em; }
+  .asked { padding: 2.6vh 3vw 0; font-size: clamp(0.95rem, 1.3vw, 1.25rem); color: var(--muted); }
+  .body { padding: 1vh 3vw 2vh; overflow: hidden; min-height: 0; }
+  .body p { margin: 0 0 0.7em; max-width: 46em; line-height: 1.42; font-size: var(--fs, 2.2rem); }
+  .body mark { background: color-mix(in srgb, var(--team) 16%, transparent); color: inherit; padding: 0 0.12em; border-radius: 3px;
+               box-shadow: inset 0 -0.14em 0 color-mix(in srgb, var(--team) 55%, transparent); }
+  .body code { font-family: var(--mono); font-size: 0.86em; background: #E4E8E1; padding: 0.05em 0.3em; border-radius: 4px; }
+  .body pre {
+    margin: 0 0 0.8em; padding: 0.55em 0.8em; font-family: var(--mono); font-size: var(--fs, 2.2rem); line-height: 1.3;
+    white-space: pre-wrap; background: #1D2733; color: #F2F4EF; border-radius: 8px; border-left: 6px solid var(--team);
+  }
+  .body pre::before { content: "> "; color: #8C98A6; }
+  .body .outcome { color: var(--ink); }
+  footer { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--rule); }
+  footer div { padding: 1.8vh 3vw 2.2vh; font-size: clamp(0.95rem, 1.25vw, 1.3rem); line-height: 1.35; }
+  footer div + div { border-left: 1px solid var(--rule); }
+  footer span { display: block; color: var(--muted); font-size: 0.82em; margin-bottom: 0.2em; }
+
+  .hint { position: fixed; right: 1.2vw; bottom: 0.6vh; font-size: 0.8rem; color: var(--muted); transition: opacity 600ms; }
+  .hint.hide { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .band, .hint { transition: none; } }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; }
+    nav { flex-direction: row; flex-wrap: wrap; padding: 1rem; }
+    footer { grid-template-columns: 1fr; }
+    footer div + div { border-left: 0; border-top: 1px solid var(--rule); }
+  }
+</style>
+</head>
+<body>
+<nav aria-label="Demo stages"></nav>
+<main>
+  <article class="sheet" aria-live="polite">
+    <header class="band">
+      <div class="who"></div>
+      <h1 class="head"></h1>
+    </header>
+    <div class="asked"></div>
+    <section class="body"></section>
+    <footer>
+      <div><span>Supervision</span><b class="dial"></b></div>
+      <div><span>Security</span><b class="security"></b></div>
+    </footer>
+  </article>
+</main>
+<div class="hint">← → step · 0–6 jump · F full screen · C switch DS cloud</div>
+<script>
+const SLIDES = [{"id": "guardrails", "stage": "0", "team": "swe", "teamName": "Software Engineering", "color": "#2453A0", "head": "Guardrails, live", "kind": "typed", "body": "<pre>What&#x27;s in the .env file?</pre><pre>Add a sample transaction with card number 4111 1111 1111 1111 to a test fixture so we can test masking.</pre><p class=\"outcome\">Both refused. The first by the repo&#x27;s permission rules, the second by a hook that scans every write for card numbers.</p>", "dial": "Rules set by the team, enforced by the tool", "security": "It can't read your secrets and can't write card data, whoever asks."}, {"id": "acquire", "stage": "1", "team": "ds", "teamName": "Data Science", "color": "#A8327A", "head": "/acquire", "kind": "command", "body": "<p>Risk leadership wants to know how a 2-point rise in US unemployment would hit credit card losses. In the open notebook notebooks/macro_credit_risk.ipynb, search FRED's own catalog (series/search API, <mark>key in the FRED_API_KEY env var</mark>) for credit card delinquency and charge-off rates, the unemployment rate, the fed funds rate and CPI. Pick the best series for each and <mark>justify the choice</mark> by frequency, seasonal adjustment and coverage. Then add a markdown cell documenting the picks and a code cell that pulls them, falling back to data/seed/ if the API fails. Run it and summarise what we got.</p>", "dial": "Open: exploring in a notebook", "security": "The API key is read from the environment and never appears in the notebook or the chat."}, {"id": "explore", "stage": "2", "team": "ds", "teamName": "Data Science", "color": "#A8327A", "head": "/explore", "kind": "command", "body": "<p>Align everything to a gap-free quarterly panel (charge-offs and delinquency are quarterly, the rest monthly; average the available months, <mark>at least 2 of 3</mark>), add YoY CPI inflation, then chart unemployment against charge-offs and delinquency, shading the 2008 and 2020 recessions.</p>", "dial": "Open: exploring in a notebook", "security": "Public data only; the team's data rules live in CLAUDE.md and every session follows them."}, {"id": "fit-model", "stage": "3", "team": "ds", "teamName": "Data Science", "color": "#A8327A", "head": "/fit-model", "kind": "command", "body": "<p>Fit a simple, interpretable model of how unemployment drives our card losses, using delinquency on its own lag plus lagged unemployment and fed funds, from 2000 onward, with HAC standard errors. <mark>Sanity-check it before going further.</mark></p>", "dial": "Open, with a check built in", "security": "Model risk: assumptions stated and the model challenged before anyone relies on it."}, {"id": "fix-model", "stage": "3", "team": "ds", "teamName": "Data Science", "color": "#A8327A", "head": "/fix-model", "kind": "command", "body": "<p>Fix it: model charge-offs on the 1-year change in unemployment, exclude the pandemic quarters, and <mark>show how much that exclusion matters</mark>. Then project 8 quarters under baseline vs. unemployment +2pp ramped over 4 quarters and chart both against history.</p>", "dial": "Open, with a check built in", "security": "Model risk: interpretable, documented and validated, as SR 11-7 expects."}, {"id": "graduate", "stage": "4", "team": "ds", "teamName": "Data Science", "color": "#A8327A", "head": "/graduate", "kind": "command", "body": "<p>Graduate this into the risk_model package <mark>so production doesn't depend on the notebook</mark>: typed functions for fetching, quarterly transforms, the model and the projection, plus <mark>pytest tests</mark> (including the \".\" missing-value case, the ≥2-of-3-months rule and gap-free lags). Follow docs/DATA_CONTRACT.md, publish the panel and stress payload through risk_model.storage, and run the tests with exactly <code>python -m pytest -q</code> from the repo root (no <code>cd</code> or pipes).</p>", "dial": "Tighter: production code, tests required to finish", "security": "Every write is scanned; data is published to your bucket under your IAM."}, {"id": "stress-panel", "stage": "5", "team": "swe", "teamName": "Software Engineering", "color": "#2453A0", "head": "/stress-panel", "kind": "command", "body": "<p>Risk leadership wants to explore this themselves. In dashboard/, fill the empty \"Stress scenarios\" slot with a stress panel: a slider for an unemployment rise from 0 to 5 points (phased in over a year), the no-shock and stressed charge-off paths against recent history, and a one-sentence headline with the peak impact. Compute projections in the browser from the published payload, following the projection rule in docs/DATA_CONTRACT.md, and add <mark>Vitest tests proving the TypeScript matches</mark> the scenarios the Python model published. Run the tests with exactly <code>npm test --prefix dashboard</code> from the repo root (no <code>cd</code>, <code>npx</code> or pipes).</p>", "dial": "Tighter: a person approves the plan before any change", "security": "Change control: the plan is approved and the diff is reviewable."}, {"id": "incident", "stage": "6", "team": "sre", "teamName": "Site Reliability", "color": "#1D7449", "head": "/incident", "kind": "command", "body": "<p>We just got paged: the freshness check is failing, yet last night's ingest job reported success. Read ops/logs/alert.txt and ops/logs/ingest-latest.log (last night's run), then follow what the log says into the code. <mark>Use only file reads and searches</mark>: don't run shell commands, don't read tests or the dashboard, and <mark>don't change anything</mark>. Answer in five short bullets or fewer: what happened, why the job looked green, and the fix you'd make.</p>", "dial": "Tightest: diagnosis is read-only", "security": "Least privilege: the agent investigates production without being able to change it."}, {"id": "sweep", "stage": "6", "team": "sre", "teamName": "Site Reliability", "color": "#1D7449", "head": "/sweep", "kind": "command", "body": "<p>We fixed the silent fallback in the risk pipeline. Do we have the same problem, or related security issues, anywhere else? Sweep every service under services/ using the fleet-reviewer subagent, running several in parallel (split the services into groups of about four). <mark>Don't change anything.</mark></p><p>Then give me one table of all findings, critical first: service, finding, severity, file:line, fix. Below it: the number of services checked and clean, and the three you'd fix first and why, in three short bullets.</p>", "dial": "Tightest: reviewers can only read", "security": "16 services audited for silent fallbacks, secrets in code, card data in logs and missing timeouts."}, {"id": "fix", "stage": "6", "team": "sre", "teamName": "Site Reliability", "color": "#1D7449", "head": "The fix goes in", "kind": "typed", "body": "<pre>bash scripts/apply-fix.sh</pre><p class=\"outcome\">A person applies the team&#x27;s reviewed fix. The nightly job re-runs and the freshness check passes, or the job now fails loudly.</p>", "dial": "Tightest: a person applies the fix", "security": "The agent proposed; a person decided."}, {"id": "cost", "stage": "6", "team": "all", "teamName": "Every team", "color": "#3A4656", "head": "What it cost", "kind": "typed", "body": "<pre>python3 scripts/cost-report.py</pre><p class=\"outcome\">Model usage for the whole flow, per team, from Claude Code&#x27;s own token counts. Your AWS and GCP bills are authoritative.</p>", "dial": "Cost visible per session and per team", "security": "Spend lands in your own cloud billing, with your budgets and alerts."}];
+const CLOUD = { ds: "Google Vertex AI", swe: "Amazon Bedrock", sre: "Amazon Bedrock", all: "AWS and GCP" };
+const params = new URLSearchParams(location.search);
+if (params.get("ds") === "bedrock") CLOUD.ds = "Amazon Bedrock";
+
+const $ = (s) => document.querySelector(s);
+const nav = $("nav");
+let i = Math.max(0, SLIDES.findIndex((s) => "#" + s.id === location.hash));
+
+// Rail: stages are a real sequence, so they're numbered.
+const stages = [...new Set(SLIDES.map((s) => s.stage))];
+for (const st of stages) {
+  const g = document.createElement("div");
+  g.className = "stage";
+  g.innerHTML = `<span class="num">${st}</span><ol></ol>`;
+  for (const s of SLIDES.filter((x) => x.stage === st)) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.textContent = s.kind === "command" ? s.head : s.head;
+    if (s.kind !== "command") b.classList.add("label");
+    b.dataset.i = SLIDES.indexOf(s);
+    b.style.setProperty("--team", s.color);
+    b.addEventListener("click", () => show(+b.dataset.i));
+    li.append(b);
+    g.querySelector("ol").append(li);
+  }
+  nav.append(g);
+}
+
+function fit() {
+  // Largest prompt size that fits the space, so long prompts stay readable without scrolling.
+  const body = $(".body");
+  let fs = Math.min(innerWidth / 30, innerHeight / 17, 46);
+  body.style.setProperty("--fs", fs + "px");
+  while (body.scrollHeight > body.clientHeight && fs > 15) {
+    fs -= 1;
+    body.style.setProperty("--fs", fs + "px");
+  }
+}
+
+function show(n) {
+  i = Math.min(SLIDES.length - 1, Math.max(0, n));
+  const s = SLIDES[i];
+  document.documentElement.style.setProperty("--team", s.color);
+  $(".who").innerHTML = `<b>${s.teamName}</b>, through ${CLOUD[s.team]}`;
+  const head = $(".head");
+  head.textContent = s.head;
+  head.classList.toggle("title", s.kind !== "command");
+  $(".asked").textContent = s.kind === "command" ? "What that command asks Claude:" : "Typed in the terminal:";
+  $(".body").innerHTML = s.body;
+  $(".dial").textContent = s.dial;
+  $(".security").textContent = s.security;
+  nav.querySelectorAll("button").forEach((b) => {
+    const k = +b.dataset.i;
+    b.toggleAttribute("aria-current", false);
+    if (k === i) b.setAttribute("aria-current", "step");
+    b.classList.toggle("done", k < i);
+  });
+  history.replaceState(null, "", location.pathname + location.search + "#" + s.id);
+  fit();
+}
+
+addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (k === "ArrowRight" || k === " " || k === "PageDown") { e.preventDefault(); show(i + 1); }
+  else if (k === "ArrowLeft" || k === "PageUp") { e.preventDefault(); show(i - 1); }
+  else if (/^[0-6]$/.test(k)) show(SLIDES.findIndex((s) => s.stage === k));
+  else if (k === "f" || k === "F") {
+    if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.();
+  } else if (k === "c" || k === "C") {
+    CLOUD.ds = CLOUD.ds === "Google Vertex AI" ? "Amazon Bedrock" : "Google Vertex AI";
+    show(i);
+  }
+});
+addEventListener("resize", fit);
+addEventListener("hashchange", () => {
+  const n = SLIDES.findIndex((s) => "#" + s.id === location.hash);
+  if (n >= 0 && n !== i) show(n);
+});
+setTimeout(() => $(".hint").classList.add("hide"), 5000);
+show(i);
+</script>
+</body>
+</html>
