@@ -9,14 +9,8 @@
 #   sre -> Amazon Bedrock
 # Inside a session, run /status to show the active provider on screen.
 #
-# Cost controls (override any of these in .env):
-#   DS_MODEL=opus        modelling and judgment calls: the most capable model
-#   SWE_MODEL=opusplan   Opus while planning, Sonnet while writing the code
-#   SRE_MODEL=sonnet     triage and fixes; the sweep's reviewers run on their own model
-#                        (.claude/agents/fleet-reviewer.md)
 # Every persona shows a status line with model, session cost, time and lines changed, and records
-# totals for `python3 scripts/cost-report.py`. On Bedrock/Vertex the `sonnet`/`haiku` aliases
-# resolve to Sonnet 4.5 / Haiku 4.5 unless ANTHROPIC_DEFAULT_SONNET_MODEL / _HAIKU_MODEL are set.
+# totals for `python3 scripts/cost-report.py`.
 
 _repo_root="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 
@@ -45,15 +39,15 @@ _clear_providers() {
 
 _title() { printf '\033]0;%s\007' "$1"; }
 
-# Launch Claude for a persona: its model, the cost status line, and the shared cost ledger.
+# Launch Claude for a persona with the cost status line and the shared cost ledger.
 # The status line comes in through --settings, so .claude/settings.json is untouched.
 _launch() {
-  local persona="$1" model="$2"; shift 2
+  local persona="$1"; shift
   export CLAUDE_PERSONA="$persona" COST_LEDGER_DIR="$_repo_root/.claude/cost-ledger"
   local sl
   sl="$(printf '{"statusLine":{"type":"command","command":"python3 %s/scripts/statusline.py"}}' "$_repo_root")"
-  echo -e "\033[2m  model: $model · cost so far: python3 scripts/cost-report.py\033[0m"
-  (cd "$(_persona_dir)" && claude --model "$model" --settings "$sl" "$@")
+  echo -e "\033[2m  cost so far: python3 scripts/cost-report.py\033[0m"
+  (cd "$(_persona_dir)" && claude --settings "$sl" "$@")
 }
 
 ds() {
@@ -71,7 +65,7 @@ ds() {
     _title "Data Science · Claude via Vertex AI"
     echo -e "\033[1;35m▶ Data Science — Claude Code via Google Vertex AI ($CLOUD_ML_REGION)\033[0m"
   fi
-  _launch ds "${DS_MODEL:-opus}" "$@"
+  _launch ds "$@"
 }
 
 swe() {
@@ -80,7 +74,7 @@ swe() {
   : "${AWS_REGION:?set AWS_REGION in .env}"
   _title "Software Engineering · Claude via Bedrock"
   echo -e "\033[1;34m▶ Software Engineering — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  _launch swe "${SWE_MODEL:-opusplan}" "$@"
+  _launch swe "$@"
 }
 
 sre() {
@@ -89,5 +83,5 @@ sre() {
   : "${AWS_REGION:?set AWS_REGION in .env}"
   _title "SRE · Claude via Bedrock"
   echo -e "\033[1;32m▶ SRE — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  _launch sre "${SRE_MODEL:-sonnet}" "$@"
+  _launch sre "$@"
 }

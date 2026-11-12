@@ -47,17 +47,9 @@ Security is shown, not claimed. Say "security" out loud at each beat marked **Se
 | 6 | Read-only diagnosis; reviewers that can't edit; the sweep finds secrets and PII | "Least privilege for the agent, and it finds your exposures." |
 
 **The cost lens (cost-conscious, not cost-driven).** Every terminal's status line shows the team,
-model, running session cost, time and lines changed, e.g. `SRE · Sonnet 4.5 · $0.42 · 3m11s · +12/-3`.
-The model follows the job, not one default for everyone:
-
-| Team | Model | Why |
-|---|---|---|
-| DS (stages 1–4) | `opus` | Modelling judgment: catching the wrong-sign model is worth the top model |
-| SWE (stage 5) | `opusplan` | Opus designs the plan, Sonnet writes the code |
-| SRE (stage 6) | `sonnet` | Triage of a known pattern; the 16 reviewers also run on `sonnet` |
-
-Change any of these in `.env` (`DS_MODEL`, `SWE_MODEL`, `SRE_MODEL`) or the reviewer's `model:` line.
+model, running session cost, time and lines changed, e.g. `SRE · Opus 4.6 · $0.42 · 3m11s · +12/-3`.
 At the end, `! python3 scripts/cost-report.py` prints cost and agent time per team for the whole run.
+The demo runs one model throughout; model choice per task is a talk-track point (see the closing).
 
 **Run order: overlap, don't wait.** One presenter supervising several agents is the point:
 - As soon as stage 4 *publishes* (the payload is in the bucket), switch to `swe` and approve the
@@ -101,15 +93,10 @@ At the end, `! python3 scripts/cost-report.py` prints cost and agent time per te
       its own tools, which need no approval.
 - [ ] `PYTHON=$(which python)` in `.env` (the job and Claude's re-run use it)
 - [ ] `/sweep` dry run in `../fintechco-prod`: compare with `docs/FLEET_FINDINGS.md` (4 criticals found?)
-- [ ] Bedrock quota: the sweep runs several subagents at once. Reviewers already run on `sonnet`
-      (a separate quota pool from Opus); if you still see 429s, request higher limits
-- [ ] Models enabled in the AWS account: Opus 5.5 **and** the model `sonnet` resolves to (Sonnet 4.5 on
-      Bedrock unless `ANTHROPIC_DEFAULT_SONNET_MODEL` is set). Quick check: `sre -p "say ok"` and `swe -p "say ok"`.
-      If Sonnet isn't enabled, set `SWE_MODEL=opus` and `SRE_MODEL=opus` in `.env` and change the reviewer to `model: inherit`
+- [ ] Bedrock quota: the sweep runs several subagents at once. If you see 429s, request higher limits
+- [ ] Note which model the status line shows (the account currently gets Opus 4.6 on Bedrock) and say that name on stage
 - [ ] Status line visible in each persona (bottom of the terminal); full dry run, then
       `python3 scripts/cost-report.py` → note the total for the closing line (`demo-reset.sh` clears it)
-- [ ] Optional cost/quality check for the sweep: run `/sweep` with the reviewer on `sonnet`, then `haiku`;
-      compare cost (status line) and findings vs `docs/FLEET_FINDINGS.md`. Use the cheapest that still finds all 4 criticals
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -404,9 +391,10 @@ network is down, the job now *fails loudly*, which is the point.
 of 16 services: typically a week → about a minute."
 
 **Cost (10s):** `! python3 scripts/cost-report.py`
-> "That whole flow, three teams and a fleet audit, cost about $X in model usage [read the total]. Each team
-> ran the model its job needed: Opus for modelling, Opus to plan and Sonnet to build, Sonnet for triage
-> and the 16 reviewers. Across enterprise deployments the average is about $13 per developer per
+> "That whole flow, three teams and a fleet audit, cost about $X in model usage [read the total], all on
+> the top model. In rollout you'd match the model to the job: the top model for modelling and design,
+> a faster, cheaper one for routine builds and for the reviewers in a sweep, set per team or per
+> subagent in one line of config. Across enterprise deployments the average is about $13 per developer per
 > active day. At your scale you'd see it in your own AWS and GCP bills, with per-user numbers through
 > OpenTelemetry, and budgets enforced in your cloud's budget controls or a gateway."
 
