@@ -56,8 +56,13 @@ ds    # Data Science (Vertex)    swe   # SWE (Bedrock)    sre   # SRE (Bedrock)
 
 ## Stage commands
 Each demo stage's prompt is a project command in `.claude/commands/`: `/acquire`, `/explore`,
-`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`, `/incident-fix`. `scripts/update-checkpoints.sh` puts the latest
+`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`, `/sweep`, `/incident-fix`. `scripts/update-checkpoints.sh` puts the latest
 commands and reset script onto every checkpoint (commits marked `Tooling:`).
+
+## Service fleet (stage 6 sweep)
+`services/` holds 16 small representative services (Go, Python, TypeScript, Java, shell) with planted
+reliability and security flaws. `/sweep` reviews them in parallel with the read-only `fleet-reviewer`
+subagent (`.claude/agents/`). Answer key: `docs/FLEET_FINDINGS.md`.
 
 ## Dashboard
 ```bash

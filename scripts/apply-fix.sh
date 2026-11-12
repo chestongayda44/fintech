@@ -5,6 +5,8 @@ set -euo pipefail
 
 main() {
   cd "$(dirname "$0")/.."
+  # Works from a plain terminal tab: production's .env has the FRED key, PYTHON and DATA_SOURCE.
+  if [[ -f .env ]]; then set -a; source .env; set +a; fi
   git reset -q --hard s4-done
   local fix
   fix="$(git log -1 --format=%H --grep='\[checkpoint:s4-done\]' s4-done)"
