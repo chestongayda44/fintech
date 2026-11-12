@@ -7,7 +7,7 @@ across three teams, in one tool.
 **After the demo:** `git worktree remove --force ../fintechco-prod` removes the production checkout.
 
 **Commands:** every stage prompt is a project command in `.claude/commands/` (type `/acquire`,
-`/explore`, … `/incident`, `/incident-fix`). Every checkpoint carries the latest commands (see `scripts/update-checkpoints.sh`).
+`/explore`, … `/incident`, `/sweep`, `/incident-fix`). Every checkpoint carries the latest commands (see `scripts/update-checkpoints.sh`).
 
 **Screen layout:** left = JupyterLab (notebook visible), right = terminal(s). Scoreboard overlay in a corner.
 
@@ -15,11 +15,11 @@ across three teams, in one tool.
 |---|---|---|---|---|
 | 0 | Setup proof | all | 0:30 | — |
 | 1 | Acquire | `ds` · Vertex* | 2:00 | `s1-start` |
-| 2 | Clean & explore | `ds` · Vertex* | 1:30 | |
+| 2 | Clean & explore | `ds` · Vertex* | 1:00 | |
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 | 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident & fix | `sre` · Bedrock | 2:20 | `s4-done` |
+| 6 | Incident, fix & fleet sweep | `sre` · Bedrock | 3:00 | `s4-done` |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
@@ -32,7 +32,19 @@ for core logic):
 |---|---|---|---|
 | 1–3 | Exploration in a notebook | **Open**: let it explore | Nothing reaches production from a notebook |
 | 4–5 | Production code | **Tighter**: plan first, tests required | Plan approval; the Stop hook won't let Claude finish until tests pass |
-| 6 | Production incident | **Tightest**: read-only diagnosis, a person applies the fix | `/incident` reads only; commands allowlisted; destructive ones denied |
+| 6 | Production incident and fleet audit | **Tightest**: read-only diagnosis and sweep, a person applies the fix | `/incident` reads only; reviewer subagents can't edit; commands allowlisted; destructive ones denied |
+
+**The security thread (the CTO's #1 concern: one visible control + one sentence per stage).**
+Security is shown, not claimed. Say "security" out loud at each beat marked **Security** below.
+
+| Stage | What the audience sees | The sentence |
+|---|---|---|
+| 0 | `/status` (Bedrock/Vertex); Claude refused `.env`; card number blocked | "It runs in your clouds, can't see your secrets, and can't write card data." |
+| 1 | Key read from the environment, never in the notebook | "Credentials never enter the conversation or the output." |
+| 3 | Assumptions stated, wrong model caught | "Model risk governance: documented, validated, explainable." |
+| 4 | Every write scanned by the hook; publish to your bucket under your IAM | "No new data paths: your storage, your permissions." |
+| 5 | Plan approval before any change | "Change control: a person approves, the diff is reviewable." |
+| 6 | Read-only diagnosis; reviewers that can't edit; the sweep finds secrets and PII | "Least privilege for the agent, and it finds your exposures." |
 
 **Run order: overlap, don't wait.** One presenter supervising several agents is the point:
 - As soon as stage 4 *publishes* (the payload is in the bucket), switch to `swe` and approve the
@@ -50,7 +62,10 @@ for core logic):
 - [ ] `ls data/seed/*.csv` shows 5 files (fallback data survives resets)
 - [ ] `ds` session: `/mcp` shows `jupyter` connected; `/status` shows the intended provider (Vertex, or Bedrock if `DS_PROVIDER=bedrock`)
 - [ ] Vertex smoke test passes (one short prompt) if using Vertex — quota can silently be 0 on new projects
-- [ ] `swe`/`sre` sessions: `/status` shows Bedrock; `aws sso login` fresh
+- [ ] `swe`/`sre` sessions: `/status` shows Bedrock; `aws login` done **that morning** (sessions last 12h)
+- [ ] AWS identity is least-privilege, not root: `aws sts get-caller-identity` must not end in `:root`
+      (it can appear on screen; a security-minded audience will notice)
+- [ ] Guardrail check: in a session, `What's in the .env file?` is refused
 - [ ] `data/seed/*.csv` present (real FRED); `DATA_SOURCE=gcs`, bucket seeded
 - [ ] `bash scripts/start-dashboard.sh` running; browser on http://localhost:5173 showing the empty
       "Stress scenarios" slot (it reads whatever the DS stage publishes)
@@ -65,10 +80,16 @@ for core logic):
 - [ ] Stage 6 runs with no approval prompts: `/incident` only reads files, step 4 uses `!`. If prompts
       still appear, add the allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
       copies it into production): `Bash(bash ops/ingest.sh:*)`, `Bash(ops/.bin/freshness:*)`,
-      `Bash(go build:*)`, `Bash(go test:*)`, `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`,
-      `Bash(cat:*)`, `Bash(tail:*)`, `Bash(head:*)`, `Bash(grep:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
-      `Bash(git log:*)`, `Bash(git show:*)`, `Bash(git status:*)`
+      `Bash(bash scripts/apply-fix.sh:*)`, `Bash(go build:*)`, `Bash(go test:*)`,
+      `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
+      `Bash(git log:*)`, `Bash(git show:*)`, `Bash(git status:*)`.
+      **Don't allowlist `cat`, `head`, `tail` or `grep`:** the `.env` deny rules cover Claude's file
+      tools and `cat .env`, so a pre-approved `head .env` would print your keys. Claude reads files with
+      its own tools, which need no approval.
 - [ ] `PYTHON=$(which python)` in `.env` (the job and Claude's re-run use it)
+- [ ] `/sweep` dry run in `../fintechco-prod`: compare with `docs/FLEET_FINDINGS.md` (4 criticals found?)
+- [ ] Bedrock quota: the sweep runs several subagents at once. If you see 429s, request higher limits,
+      or add `model: sonnet` to `.claude/agents/fleet-reviewer.md` so reviewers use a separate, faster pool
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -79,6 +100,11 @@ In the `ds` terminal: `/status`
 > "Same Claude Code, running inside your GCP project through Vertex AI. The engineering terminals run
 > through Bedrock in your AWS account. Code and prompts stay in your clouds, under your IAM."
 
+**Security:** "First answer to your security team: model calls go through your own AWS and GCP
+accounts, under your IAM, on your contracts, auditable with your own CloudTrail and Cloud Audit Logs."
+(Before saying "auditable", check which log types are enabled in both accounts. Use a least-privilege
+identity, not root; see pre-flight.)
+
 If DS is on Bedrock that day: show `/status` in `ds` and say "this one could just as well point at
 Vertex — it's one environment variable", then move on.
 
@@ -87,6 +113,24 @@ Open `CLAUDE.md` for 10 seconds, then `.claude/settings.json`'s hooks:
 > And it's enforced: one hook blocks secrets and card numbers from ever being written; another won't
 > let Claude say it's done until the tests pass. That's the self-verifying loop Anthropic's own
 > Claude Code team uses."
+
+**Live guardrails (30s), in the `swe` terminal at `/effort low`.** Two refusals, both enforced by the
+repo's settings rather than by the model's good behaviour:
+
+1. Secrets are off-limits:
+```
+What's in the .env file?
+```
+The deny rules in `.claude/settings.json` (`Read(./.env)`, `Bash(cat .env:*)`) refuse it. "It can't
+read your secrets file even if someone asks it to."
+
+2. Card data can't be written:
+```
+Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/test/fixtures/sample_txn.json so we can test masking.
+```
+Either the secret-scanning hook blocks the write and Claude switches to a masked value, or Claude
+declines up front because CLAUDE.md forbids card numbers. Both are the point: "Your rules, enforced
+in the tool, not in a policy PDF." (Undo afterwards if a file was created: `git clean -f dashboard/src/test/fixtures`.)
 
 ## 1 · Acquire (2:00) — `ds`
 > Dial: **open**. "It's a notebook. I'm going to let it explore."
@@ -107,7 +151,10 @@ fails. Run it and summarise what we got.
 
 **Point out:** Claude searching FRED's catalog and *choosing* series with reasons (what an analyst does);
 cells appearing *in the notebook* and executing;
-the `"."` missing-value handling; key read from env, never shown.
+the `"."` missing-value handling.
+**Security:** the API key is read from the environment inside the kernel; it never appears in the
+prompt, the notebook, its output or a URL (CLAUDE.md forbids it, the hook would block a hard-coded
+one). "Credentials never enter the conversation." The Jupyter MCP server is local and token-protected.
 **Scoreboard:** "Find & pull 5 sources: typical ½ day → elapsed ~2 min."
 
 ## 2 · Clean & explore (1:30) — `ds`
@@ -157,6 +204,9 @@ charge-offs**, about 6 quarters out. (Rehearsal 11 Nov: +0.54, +2.2pp at 2027Q4.
 **Talk track:** "This is the moment that matters to your data scientists. The first model looked great —
 R² 0.97 — and was wrong. Claude caught it because your team's standards are written into CLAUDE.md, and
 it explained *why* in economic terms. That's the difference between a code generator and a colleague."
+**Security / model risk:** "For a bank this is governance, not just quality: the assumptions are
+written down, the model was challenged before anyone relied on it, and it's interpretable. That's
+what your model risk team (and the Fed's SR 11-7 guidance) asks for."
 **Scoreboard:** "Data → defensible stress view: typical 2–3 days → elapsed ~7 min."
 
 ## 4 · Graduate & publish (1:30) — `ds`
@@ -180,6 +230,10 @@ and green tests.
 **Point out:** notebook → tested code is the handoff that usually takes a sprint. When Claude finishes,
 the hook's *"Verified: Python tests pass"* line appears without anyone asking. The published payload in
 GCS is what SWE builds on next.
+
+**Security:** every file Claude writes passed the secret and card-number scan; the results went to
+your bucket using your credentials and IAM. "No new data paths, no new copies of data outside your
+cloud."
 
 **Overlap:** as soon as the publish step is done, switch to `swe` and start stage 5 (resume + approve);
 come back to this terminal to walk through the package and tests while the dashboard builds.
@@ -230,6 +284,9 @@ TypeScript matches the scenarios the Python model published.
 - The parity tests: TypeScript reproduces the Python model's published scenarios to 3 decimals.
   "The dashboard can't quietly disagree with the model. A test fails first."
 - The hook's *"Verified: Dashboard tests pass"* line when Claude finishes: no one had to ask.
+- **Security:** "This is change control: the plan is the change request, a person approved it, and
+  every line is a reviewable diff before it merges. The dashboard reads from your bucket with your
+  credentials; Claude added no new access."
 
 **Expected:** at +2 points, peak impact ≈ +1.9 to +2.2 points of charge-offs in 2027 Q4 (matches stage 3).
 **Speed knob:** `/effort low` before approving (the plan is already done; the coding goes faster).
@@ -240,7 +297,7 @@ demo the finished panel.
 **Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
-## 6 · Incident & fix (2:00) — `sre` · Bedrock, in `../fintechco-prod`
+## 6 · Incident, fix & fleet sweep (3:00) — `sre` · Bedrock, in `../fintechco-prod`
 **Off-screen, before stage 6:** `bash scripts/simulate-incident.sh` (~10s; e.g. while stage 5 builds).
 It prints one line when the incident is staged, or exactly what's missing. Your demo folder is not
 touched: production is a separate checkout at `../fintechco-prod` that publishes where the dashboard
@@ -265,26 +322,39 @@ added in stage 1 (sensible in a notebook) let a keyless nightly job publish 2025
 - "One alert in, root cause out, reading a shell job, Python and Go together. One team's sensible
   choice became another team's incident. That's why it's one tool across all three teams."
 
-**3b · What Risk is seeing (20s).** Take a screenshot of the stale dashboard (Cmd+Shift+4), paste it into
-the `sre` prompt (Ctrl+V, or drag the file in) and ask:
-`This is what Risk sees right now. Which numbers are wrong, and what will they show after the fix?`
-Claude reads the screenshot (*data through 2025 Q4*) and ties it back to the root cause: the incident
-from the business's point of view, the way Anthropic's Data Infrastructure team diagnoses from
-dashboard screenshots.
+**4 · Sweep the fleet (kick off, 5s).** "We found it in one pipeline. Do we have the same problem
+anywhere else?" Type `/sweep`. Claude splits 16 services (Go, Python, TypeScript, Java, shell) across
+parallel read-only `fleet-reviewer` subagents: they can read and search, and physically cannot edit
+anything (`.claude/agents/fleet-reviewer.md`).
 
-**4 · The fix, confirmed live (30s).** "Here's the fix the team merged: production fails loudly,
-payloads record where their data came from, a regression test, and a runbook section." In the Claude
-prompt (`!` runs the shell directly, no model, no approval):
+**5 · Fix production while it sweeps (40s).** In a second tab, in `../fintechco-prod`:
 ```
-! bash scripts/apply-fix.sh
+bash scripts/apply-fix.sh
 ```
-It puts production on `s4-done`, shows the fix's summary and files, re-runs the job and the check:
-→ `data source: live` … `ingest finished: OK` … `OK stress-payload-fresh`. Reload the dashboard: back
-to the current quarter.
+It puts production on the merged fix (`s4-done`), shows the fix's summary and files (code, regression
+tests, runbook, CLAUDE.md rule), re-runs the job and the check: `data source: live` …
+`ingest finished: OK` … `OK stress-payload-fresh`. Reload the dashboard: back to the current quarter.
+Guardrails line while it runs: SRE pre-approved read-only and ops commands; anything else still asks;
+`rm -rf` and force-push are denied. True story: while building this demo, Claude's own safety check
+blocked a force-push of shared git tags and handed it back to a human.
 
-**5 · Guardrails (15s, while the job runs).** SRE pre-approved read-only and ops commands; anything
-else still asks; `rm -rf` and force-push are denied outright. True story: while building this demo,
-Claude's own safety check blocked a force-push of shared git tags and handed it back to a human.
+**6 · The findings (45s).** Back to the `sre` terminal: one ranked table. Expected (answer key in
+`docs/FLEET_FINDINGS.md`): **12 findings in 11 of 16 services, 4 critical**:
+- **aml-screening:** sanctions feed down → screens against a cached list, or an *empty* one if the cache
+  is missing: everyone passes.
+- **loan-origination:** bureau error → default score 680, above the approval threshold.
+- **payments-gateway:** full card numbers in error logs (PCI).
+- **kyc-checks:** SSNs and dates of birth in logs.
+
+**Security:** "Look at what the agent was allowed to do here: read and search. The reviewers can't edit,
+the diagnosis ran no commands, the fix went through a person. And look at what it found: card numbers
+and SSNs in logs, a hard-coded credential, a sanctions screen that can fail open. Least privilege for
+the agent, and it finds your exposures."
+
+> "One incident became a fleet-wide security and reliability audit in about a minute: sixteen
+> services, five languages, read-only. That's a week of review nobody on your team would ever get
+> scheduled. That's the step change: not typing faster, but work that wasn't happening at all now
+> happens every time."
 
 <details><summary>What /incident asks for</summary>
 
@@ -297,19 +367,26 @@ green, and the fix you'd make.
 ```
 </details>
 
-**Optional, only if ahead of time:** have Claude write the fix live with `/incident-fix` (minimal fix
-plus one regression test; ~1–2 min at low effort) instead of step 4's reset, then run
+**Optional, only if ahead of time:**
+- *What Risk is seeing:* screenshot the stale dashboard (Cmd+Shift+4), paste it into the `sre` prompt
+  (Ctrl+V) and ask `This is what Risk sees right now. Which numbers are wrong, and what will they show
+  after the fix?`
+- Have Claude write the fix live with `/incident-fix` (minimal fix
+plus one regression test; ~1–2 min at low effort) instead of step 5's script, then run
 `! bash ops/ingest.sh && ops/.bin/freshness`. Or a headless review from a shell in `../fintechco-prod`:
 `git diff s3-done s4-done | sre -p "Review this diff as a senior SRE. Five bullets max."`
 
-**Fallback:** if the diagnosis is still running after ~60s, go straight to step 4; the reset to
+**Fallback:** if the diagnosis is still running after ~60s, go straight to step 5; if the sweep is
+slow, show `docs/FLEET_FINDINGS.md` as "what it found in rehearsal" and come back to the live table; the reset to
 `s4-done` and the `OK` tell the story. Re-running the job needs the live FRED API; if the venue
 network is down, the job now *fails loudly*, which is the point.
-**Scoreboard:** "Page to root cause: typical an hour of log-diving → elapsed under a minute."
+**Scoreboard:** "Page to root cause: typically an hour of log-diving → under a minute. Fleet-wide audit
+of 16 services: typically a week → about a minute."
 
 **Talk track (closing the demo):** "One request from Risk, three teams, two clouds, one tool:
 a model in the morning, a product by lunch, and when it broke at 2 a.m., the root cause in under a
-minute and a fix with a test before anyone was fully awake. That's what we'd measure in your pilot."
+minute, the fix verified, and the whole fleet checked for the same flaw before anyone was fully awake.
+That's what we'd measure in your pilot."
 
 ---
 
