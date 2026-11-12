@@ -1,21 +1,25 @@
 {
-  "permissions": {
+   "permissions": {
     "allow": [
       "mcp__jupyter",
       "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
       "Bash(pytest:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
       "Bash(npm test:*)",
       "Bash(npm run:*)",
       "Bash(go run:*)",
+      "Bash(go build:*)",
       "Bash(go test:*)",
+      "Bash(bash ops/ingest.sh:*)",
+      "Bash(ops/.bin/freshness:*)",
+      "Bash(bash scripts/apply-fix.sh:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
       "WebSearch",
-      "WebFetch(domain:fred.stlouisfed.org)",
-      "Bash(bash ops/ingest.sh:*)", "Bash(ops/.bin/freshness:*)", "Bash(go build:*)", "Bash(go test:*)",
-      "Bash(python -m pytest:*)", "Bash(python3 -m pytest:*)",
-      "Bash(cat:*)", "Bash(tail:*)", "Bash(head:*)", "Bash(grep:*)", "Bash(ls:*)",
-      "Bash(git diff:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git status:*)"
+      "WebFetch(domain:fred.stlouisfed.org)"
     ],
     "deny": [
       "Read(./.env)",
