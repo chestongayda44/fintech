@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -43,11 +44,41 @@ def changed_files(root: Path) -> list[str]:
     return files
 
 
+def find_python() -> str | None:
+    """A Python that can run the project's tests (pytest + pandas + statsmodels installed).
+
+    Tries $PYTHON (from .env), the active conda/venv, then `python` and `python3` on PATH. A machine
+    can have several Pythons (e.g. Homebrew's next to conda); only one has the project's packages.
+    """
+    candidates = [os.environ.get("PYTHON")]
+    for env in ("CONDA_PREFIX", "VIRTUAL_ENV"):
+        if os.environ.get(env):
+            candidates.append(str(Path(os.environ[env]) / "bin" / "python"))
+    candidates += [shutil.which("python"), shutil.which("python3"), sys.executable]
+    seen: set[str] = set()
+    for c in candidates:
+        if not c or c in seen:
+            continue
+        seen.add(c)
+        try:
+            ok = subprocess.run([c, "-c", "import pytest, pandas, statsmodels"],
+                                capture_output=True, timeout=30, check=False).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            ok = False
+        if ok:
+            return c
+    return None
+
+
 def suites_for(files: list[str], root: Path) -> list[tuple[str, list[str], Path]]:
     """(name, command, cwd) for each suite the changes touch."""
-    python = os.environ.get("PYTHON") or sys.executable
     suites: list[tuple[str, list[str], Path]] = []
     if any(f.endswith(".py") and not f.startswith((".claude/", "notebooks/", "scripts/")) for f in files):
+        python = find_python()
+        if python is None:
+            # No Python with the test packages: a setup problem, not Claude's code. Don't block on it.
+            emit({"systemMessage": "Stop hook: no Python with pytest/pandas/statsmodels found; set PYTHON "
+                                   "in .env to the interpreter that has them. Tests not run."})
         suites.append(("Python", [python, "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider"], root))
     if any(f.startswith("dashboard/src/") for f in files) and (root / "dashboard" / "node_modules").is_dir():
         suites.append(("Dashboard", ["npm", "test", "--silent"], root / "dashboard"))
