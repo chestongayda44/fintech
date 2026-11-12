@@ -42,6 +42,11 @@ main() {
 
   # A full run starts a fresh cost ledger (scripts/cost-report.py totals this run only).
   if [[ "$target" == "s1-start" ]]; then rm -rf .claude/cost-ledger; fi
+  # Leftovers from the previous run that git doesn't track: JupyterLab's saved copy of the notebook,
+  # Python's compiled copies of the old code, and last run's locally published files.
+  rm -f .jupyter_ystore.db
+  find . -name __pycache__ -not -path "*/node_modules/*" -prune -exec rm -rf {} +
+  rm -f data/published/*
 
 
   # Restore the known-good dataset in the bucket so later stages always have data.
