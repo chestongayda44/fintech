@@ -199,8 +199,9 @@ demo the finished panel.
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
 ## 6 · Incident & fix (3:00) — `sre` · Bedrock
-**Set the scene (before you say anything):** run `bash scripts/simulate-incident.sh` in a spare tab
-(~10s; or run it while stage 5 builds). **Your demo folder is not touched**: production is a separate
+**Set the scene (off-screen, before stage 6):** run `bash scripts/simulate-incident.sh` in a spare tab
+(~10s; e.g. while stage 5 builds). It prints one line when the incident is staged, or exactly what's
+missing (bucket, Go, seed data). `-v` shows each step. **Your demo folder is not touched**: production is a separate
 checkout at `../fintechco-prod` (a git worktree at `s3-done`) that publishes to the same place the
 dashboard reads. The script runs production's nightly job the way it runs after a key rotation (no
 `FRED_API_KEY`), then the freshness check.
