@@ -43,7 +43,7 @@ ds    # Data Science (Vertex)    swe   # SWE (Bedrock)    sre   # SRE (Bedrock)
 
 ## Stage commands
 Each demo stage's prompt is a project command in `.claude/commands/`: `/acquire`, `/explore`,
-`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`. `scripts/update-checkpoints.sh` puts the latest
+`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`, `/incident-fix`. `scripts/update-checkpoints.sh` puts the latest
 commands and reset script onto every checkpoint (commits marked `Tooling:`).
 
 ## Dashboard
