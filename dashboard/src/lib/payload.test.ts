@@ -29,6 +29,12 @@ describe("loadPayload", () => {
     });
   });
 
+  it("reports an unreadable source with the underlying error", async () => {
+    const fake = async () =>
+      new Response(JSON.stringify({ error: "unreadable", source: "gs://b/p/stress_payload.json", detail: "auth expired" }), { status: 502 });
+    await expect(loadPayload(fake as typeof fetch)).rejects.toMatchObject({ kind: "unreadable", detail: "auth expired" });
+  });
+
   it("returns the payload and where it came from", async () => {
     const fake = async () =>
       new Response(JSON.stringify(fixture), { status: 200, headers: { "X-Payload-Source": "data/published" } });

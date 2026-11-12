@@ -78,6 +78,18 @@ function ErrorState({ error }: { error: Error }) {
       </div>
     );
   }
+  if (error instanceof PayloadError && error.kind === "unreadable") {
+    return (
+      <div className="state">
+        <p className="lead">The stress results couldn't be read.</p>
+        <p>
+          Reading <code>{error.source}</code> failed. Check that the bucket exists and that{" "}
+          <code>gcloud auth login</code> is current, or restart with <code>DATA_SOURCE=local</code>.
+        </p>
+        {error.detail && <pre className="state-detail">{error.detail}</pre>}
+      </div>
+    );
+  }
   return (
     <div className="state">
       <p className="lead">The stress results couldn't be read.</p>

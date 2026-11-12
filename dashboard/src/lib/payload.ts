@@ -5,8 +5,9 @@ export const PAYLOAD_URL = "/api/stress_payload.json";
 export class PayloadError extends Error {
   constructor(
     message: string,
-    readonly kind: "not_published" | "invalid",
+    readonly kind: "not_published" | "unreadable" | "invalid",
     readonly source?: string,
+    readonly detail?: string,
   ) {
     super(message);
   }
@@ -41,6 +42,10 @@ export async function loadPayload(fetchImpl: typeof fetch = fetch): Promise<{ pa
   if (res.status === 404) {
     const body = (await res.json().catch(() => ({}))) as { source?: string };
     throw new PayloadError("No stress results have been published yet", "not_published", body.source);
+  }
+  if (res.status === 502) {
+    const body = (await res.json().catch(() => ({}))) as { source?: string; detail?: string };
+    throw new PayloadError("Couldn't read the published stress results", "unreadable", body.source, body.detail);
   }
   if (!res.ok) throw new PayloadError(`Could not load stress results (HTTP ${res.status})`, "invalid");
   return { payload: parsePayload(await res.json()), source };

@@ -43,19 +43,17 @@ main() {
   done < <(git log main --reverse --format=%H --grep='^S1-Overlay: ')
 
   if (( ${#overlays[@]} )) && git rev-parse -q --verify refs/tags/s1-start >/dev/null; then
-    local changed=0 entry src p
+    local entry src p
     git checkout -q --detach s1-start
+    # Apply every overlay in order (later commits win), then commit only if the result differs.
     for entry in "${overlays[@]}"; do
       src="${entry%%:*}"
       for p in ${entry#*:}; do
-        if ! git diff --quiet s1-start "$src" -- "$p" 2>/dev/null || ! git cat-file -e "s1-start:$p" 2>/dev/null; then
-          git checkout -q "$src" -- "$p"
-          changed=1
-        fi
+        git checkout -q "$src" -- "$p"
       done
     done
-    if (( changed )) && [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-      git commit -q -m "Starting state: overlay ${overlays[*]##*:} from main"
+    if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+      git commit -q -m "Starting state: overlay starting-state files from main"
       git tag -f s1-start >/dev/null
       echo "s1-start -> $(git log -1 --format='%h %s')"
     else
