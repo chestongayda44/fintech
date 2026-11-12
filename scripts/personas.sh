@@ -20,6 +20,16 @@ else
   echo "personas: no .env found at $_repo_root/.env (copy .env.example)" >&2
 fi
 
+# Run Claude in the current checkout if it's a worktree of this repo (e.g. ../fintechco-prod for
+# stage 6), otherwise in the main demo folder.
+_persona_dir() {
+  local top common mine
+  top="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "$_repo_root"; return; }
+  common="$(cd "$top" && cd "$(git rev-parse --git-common-dir)" && pwd)"
+  mine="$(cd "$_repo_root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
+  if [[ "$common" == "$mine" ]]; then echo "$top"; else echo "$_repo_root"; fi
+}
+
 _clear_providers() {
   unset CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_BEDROCK
 }
@@ -41,7 +51,7 @@ ds() {
     _title "Data Science · Claude via Vertex AI"
     echo -e "\033[1;35m▶ Data Science — Claude Code via Google Vertex AI ($CLOUD_ML_REGION)\033[0m"
   fi
-  (cd "$_repo_root" && claude "$@")
+  (cd "$(_persona_dir)" && claude "$@")
 }
 
 swe() {
@@ -50,7 +60,7 @@ swe() {
   : "${AWS_REGION:?set AWS_REGION in .env}"
   _title "Software Engineering · Claude via Bedrock"
   echo -e "\033[1;34m▶ Software Engineering — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  (cd "$_repo_root" && claude "$@")
+  (cd "$(_persona_dir)" && claude "$@")
 }
 
 sre() {
@@ -59,5 +69,5 @@ sre() {
   : "${AWS_REGION:?set AWS_REGION in .env}"
   _title "SRE · Claude via Bedrock"
   echo -e "\033[1;32m▶ SRE — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  (cd "$_repo_root" && claude "$@")
+  (cd "$(_persona_dir)" && claude "$@")
 }

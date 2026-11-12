@@ -4,6 +4,8 @@
 our card portfolio, and can we see it live?"* One request travels idea → model → product → production,
 across three teams, in one tool.
 
+**After the demo:** `git worktree remove --force ../fintechco-prod` removes the production checkout.
+
 **Commands:** every stage prompt is a project command in `.claude/commands/` (type `/acquire`,
 `/explore`, …). Every checkpoint carries the latest commands (see `scripts/update-checkpoints.sh`).
 
@@ -38,6 +40,8 @@ The stage needs no web search, so it behaves the same on either cloud.
 - [ ] Stage commands present: typing `/` in a session lists `/acquire` … `/stress-panel`
 - [ ] Plan session ID for stage 5 in your notes (see stage 5 rehearsal prep)
 - [ ] `go version` works (stage 6's freshness check is Go); `bash scripts/simulate-incident.sh` dry run done
+- [ ] In rehearsal, open `sre` in `../fintechco-prod` once and approve the Jupyter MCP prompt (or choose
+      "continue without"), so it doesn't pop up on stage
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -196,14 +200,19 @@ product your CRO can use, built by an engineer in their own stack, checked again
 
 ## 6 · Incident & fix (3:00) — `sre` · Bedrock
 **Set the scene (before you say anything):** run `bash scripts/simulate-incident.sh` in a spare tab
-(it takes ~10s; or run it during stage 5's build). It resets to `s3-done`, runs the nightly job the
-way production does after a key rotation (no `FRED_API_KEY`), and runs the freshness check.
+(~10s; or run it while stage 5 builds). **Your demo folder is not touched**: production is a separate
+checkout at `../fintechco-prod` (a git worktree at `s3-done`) that publishes to the same place the
+dashboard reads. The script runs production's nightly job the way it runs after a key rotation (no
+`FRED_API_KEY`), then the freshness check.
 
 > "Fast-forward three weeks. It's 2 a.m. and the freshness check just paged SRE."
 
-Show the alert (`cat ops/logs/alert.txt`), then reload the dashboard: it says *FRED data through
-2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk numbers that look
-fresh are worse than an outage."
+Show the alert (`cat ../fintechco-prod/ops/logs/alert.txt`), then reload the dashboard: it says
+*FRED data through 2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk
+numbers that look fresh are worse than an outage."
+
+In the `sre` terminal: `cd ../fintechco-prod && sre` (the persona runs Claude in whichever checkout
+you're in). "This is production, not my laptop."
 
 **Type:** `/incident` in the `sre` terminal
 <details><summary>Full prompt</summary>
@@ -238,12 +247,12 @@ Reload the dashboard: back to the current quarter.
 
 **Ship it (30s):** headless review of the fix, same as it would run in CI. Exit the session, then:
 ```
-git diff s3-done | sre -p "Review this diff as a senior SRE: correctness, failure modes, and anything that could page us again. Five bullets max."
+cd ../fintechco-prod && git diff s3-done | sre -p "Review this diff as a senior SRE: correctness, failure modes, and anything that could page us again. Five bullets max."
 ```
 "That's the same agent running non-interactively, in CI on every PR, through your Bedrock account."
 
-**Fallback:** `scripts/demo-reset.sh s4-done`, show `git show --stat HEAD`, `python -m pytest -q`, and
-the new runbook section. Re-running the job needs the live FRED API; if the venue network is down,
+**Fallback:** in `../fintechco-prod`: `git reset --hard s4-done`, then show `git show --stat HEAD`,
+`python -m pytest -q` and the new runbook section. (Your demo folder is still untouched.) Re-running the job needs the live FRED API; if the venue network is down,
 say so: the job now *fails loudly*, which is the point.
 **Scoreboard:** "Page to verified fix, with test and runbook: typical 2–4 hours → elapsed ~3 min."
 
