@@ -24,6 +24,8 @@ scripts/start-jupyter.sh               # loads .env, uses JUPYTER_TOKEN, opens t
 Always start Jupyter with this script: it gives the notebook kernel your `FRED_API_KEY` and keeps the
 token in sync with `.mcp.json`. In Claude Code, `/mcp` should list `jupyter` as connected.
 
+Go (stage 6 freshness check): `brew install go`.
+
 Cloud:
 - **Vertex AI**: enable Claude models in Model Garden for your project/region; `gcloud auth application-default login`.
 - **Bedrock**: enable Claude model access in your region; `aws sso login --profile $AWS_PROFILE`.
@@ -41,7 +43,7 @@ ds    # Data Science (Vertex)    swe   # SWE (Bedrock)    sre   # SRE (Bedrock)
 
 ## Stage commands
 Each demo stage's prompt is a project command in `.claude/commands/`: `/acquire`, `/explore`,
-`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`. `scripts/update-checkpoints.sh` puts the latest
+`/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`. `scripts/update-checkpoints.sh` puts the latest
 commands and reset script onto every checkpoint (commits marked `Tooling:`).
 
 ## Dashboard
@@ -54,7 +56,8 @@ bash scripts/start-dashboard.sh   # loads .env, installs on first run, opens htt
 |---|---|
 | `s1-start` | scaffold + dashboard shell; notebook has a title cell; no `risk_model/` |
 | `s2-done` | DS stage complete: notebook, `risk_model/` package + tests, published artifacts |
-| `s3-done` | SWE stage complete: dashboard stress panel + parity tests |
+| `s3-done` | SWE stage complete + production ops (nightly job, Go freshness check, runbook); stage 6 starts here |
+| `s4-done` | SRE stage complete: silent seed fallback fixed, regression tests, runbook |
 
 `scripts/demo-reset.sh [tag]` puts the repo on branch `demo-live` at that tag (main untouched),
 keeps your downloaded `data/seed/`, and re-seeds the bucket from `data/seed/published/`. After a full dry run, copy
@@ -63,6 +66,8 @@ keeps your downloaded `data/seed/`, and re-seeds the bucket from `data/seed/publ
 ## Tests
 ```bash
 python -m pytest -q
+go test ./ops/freshness
+cd dashboard && npm test
 ```
 
 After pulling changes that complete a stage, run `bash scripts/update-checkpoints.sh --push` on `main`

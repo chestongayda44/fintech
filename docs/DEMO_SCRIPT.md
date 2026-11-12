@@ -17,7 +17,7 @@ across three teams, in one tool.
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 | 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident & ship | `sre` · Bedrock | 2:30 | `s4-done` (Phase 4) |
+| 6 | Incident & fix | `sre` · Bedrock | 3:00 | `s4-done` |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
@@ -37,6 +37,7 @@ The stage needs no web search, so it behaves the same on either cloud.
       "Stress scenarios" slot (it reads whatever the DS stage publishes)
 - [ ] Stage commands present: typing `/` in a session lists `/acquire` … `/stress-panel`
 - [ ] Plan session ID for stage 5 in your notes (see stage 5 rehearsal prep)
+- [ ] `go version` works (stage 6's freshness check is Go); `bash scripts/simulate-incident.sh` dry run done
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -193,7 +194,62 @@ demo the finished panel.
 **Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
-## 6 · Incident & ship — `sre` (Phase 4, to be built)
+## 6 · Incident & fix (3:00) — `sre` · Bedrock
+**Set the scene (before you say anything):** run `bash scripts/simulate-incident.sh` in a spare tab
+(it takes ~10s; or run it during stage 5's build). It resets to `s3-done`, runs the nightly job the
+way production does after a key rotation (no `FRED_API_KEY`), and runs the freshness check.
+
+> "Fast-forward three weeks. It's 2 a.m. and the freshness check just paged SRE."
+
+Show the alert (`cat ops/logs/alert.txt`), then reload the dashboard: it says *FRED data through
+2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk numbers that look
+fresh are worse than an outage."
+
+**Type:** `/incident` in the `sre` terminal
+<details><summary>Full prompt</summary>
+
+```
+We just got paged: the freshness check is failing (the alert is in ops/logs/alert.txt), yet last
+night's ingest job reported success. Investigate using the job logs in ops/logs/ and the code, and
+find the root cause. Fix it so this can't fail silently again, add a regression test, and update
+ops/RUNBOOK.md. Then re-run the ingest job and the freshness check to confirm we're healthy.
+```
+</details>
+
+**What happens (rehearsed):** Claude reads the alert and the job log, finds
+`WARNING Live FRED unavailable (FRED_API_KEY is not set); falling back to seed data`, traces it to
+the seed fallback in `risk_model` (the one Data Science added in stage 1, sensible in a notebook,
+dangerous in a nightly job), and fixes it: fallback becomes opt-in for dev only, the job fails
+loudly, payloads record `data_source`, plus a regression test and a new runbook section. It re-runs
+the job (with the key in its environment, so `data source: live`) and the freshness check prints `OK`.
+Reload the dashboard: back to the current quarter.
+
+**Point out:**
+- One alert in, root cause out, by reading a shell job, Python and Go together. "One team's sensible
+  choice became another team's incident. That's why it's one tool across all three teams."
+- It fixed the class of bug, not the instance: tests, runbook, and the rule in CLAUDE.md, so nobody
+  reintroduces it (stage 1's "fall back to seed" rule now says "dev only").
+- Guardrails while it works: commands it runs ask first (or follow the allowlist in
+  `.claude/settings.json`); destructive ones like `rm -rf` and force-push are denied outright.
+  (Rehearsal tip: approve stage 6's routine commands with "Yes, and don't ask again" so they're
+  allowlisted in `.claude/settings.local.json` and don't interrupt the live run.)
+  True story to tell: while building this demo, Claude's own safety check blocked a force-push of
+  shared git tags and handed it back to a human.
+
+**Ship it (30s):** headless review of the fix, same as it would run in CI. Exit the session, then:
+```
+git diff s3-done | sre -p "Review this diff as a senior SRE: correctness, failure modes, and anything that could page us again. Five bullets max."
+```
+"That's the same agent running non-interactively, in CI on every PR, through your Bedrock account."
+
+**Fallback:** `scripts/demo-reset.sh s4-done`, show `git show --stat HEAD`, `python -m pytest -q`, and
+the new runbook section. Re-running the job needs the live FRED API; if the venue network is down,
+say so: the job now *fails loudly*, which is the point.
+**Scoreboard:** "Page to verified fix, with test and runbook: typical 2–4 hours → elapsed ~3 min."
+
+**Talk track (closing the demo):** "One request from Risk, three teams, two clouds, one tool:
+a model in the morning, a product by lunch, and when it broke at 2 a.m., fixed with a test and a
+runbook before anyone was fully awake. That's what we'd measure in your pilot."
 
 ---
 
@@ -204,4 +260,5 @@ product your CRO can use, built by an engineer in their own stack, checked again
 | MCP disconnects | `/mcp` → reconnect; or let Claude write the cells to the .ipynb file, then reload |
 | Stage > 60s over | `scripts/demo-reset.sh <next>-done`, keep talking |
 | Cloud auth prompt | Switch `DATA_SOURCE=local` (in `.env`, restart persona) |
+| Stage 6 re-run can't reach FRED | That's the fix working: the job fails loudly. Show the tests and runbook instead |
 | Anything else | Play the stage recording, narrate over it |
