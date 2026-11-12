@@ -12,7 +12,8 @@ import requests
 log = logging.getLogger(__name__)
 
 FRED_URL = "https://api.stlouisfed.org/fred/series/observations"
-SEED_DIR = Path(__file__).resolve().parent.parent / "data" / "seed"
+# Cached FRED data used when the live API is unavailable. Override with RISK_MODEL_SEED_DIR.
+SEED_DIR = Path(os.environ.get("RISK_MODEL_SEED_DIR") or Path(__file__).resolve().parent.parent / "data" / "seed")
 
 # Column name in the panel -> FRED series id
 SERIES: dict[str, str] = {

@@ -21,3 +21,8 @@ data/seed/published/
 # JupyterLab collaboration state
 .jupyter_ystore.db
 **/.jupyter/
+
+# Ops runtime state
+ops/logs/
+ops/.prod-cache/
+ops/.bin/

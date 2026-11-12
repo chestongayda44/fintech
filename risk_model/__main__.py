@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import time
 
 from risk_model import storage
 from risk_model.fred_client import load_all
@@ -16,7 +17,8 @@ def main() -> None:
     p.add_argument("--offline", action="store_true", help="use data/seed instead of the FRED API")
     p.add_argument("--fit-start", default="1991-01-01", help="first quarter used to fit the model")
     args = p.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    logging.Formatter.converter = time.gmtime  # job logs are in UTC, like the rest of ops/logs
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
 
     data, source = load_all(prefer_live=not args.offline)
     panel = build_quarterly_panel(data)

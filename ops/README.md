@@ -1,9 +1,8 @@
-# ops/ — Phase 4 (SRE stage)
+# ops/ — SRE
 
-- `ingest.sh` — scheduled FRED pull → publish via `risk_model.storage`
-- `freshness/` — Go checker: alerts if the published panel is older than the FRED release cadence
-- `RUNBOOK.md` — what to do when ingestion or freshness fails
+- `ingest.sh` — nightly job: FRED → model → published payload (logs in `ops/logs/`)
+- `freshness/` — Go checker: pages when the published data falls behind FRED's release schedule
+  (`go run ./ops/freshness`, tests: `go test ./ops/freshness`)
+- `RUNBOOK.md` — what to do when the pipeline or the freshness check fails
 
-Planned incident for the live demo: FRED returns `"."` for a missing observation;
-an unhardened parser breaks ingestion, the freshness check fires, and Claude
-diagnoses from logs, fixes, adds a regression test, and updates the runbook.
+Demo stage 6 starts from `bash scripts/simulate-incident.sh` (see docs/DEMO_SCRIPT.md).
