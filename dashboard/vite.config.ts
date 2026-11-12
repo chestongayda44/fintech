@@ -31,16 +31,22 @@ function stressPayload(): Plugin {
         try {
           const body =
             loc.kind === "gcs"
-              ? (await run("gcloud", ["storage", "cat", loc.where], { maxBuffer: 20 * 1024 * 1024 })).stdout
+              ? (await run("gcloud", ["storage", "cat", loc.where], { maxBuffer: 20 * 1024 * 1024, timeout: 12_000 })).stdout
               : await readFile(loc.where, "utf8");
           res.setHeader("Content-Type", "application/json");
           res.setHeader("X-Payload-Source", loc.where);
           res.setHeader("Cache-Control", "no-store");
           res.end(body);
-        } catch {
-          res.statusCode = 404;
+        } catch (err) {
+          // Distinguish "nothing published there yet" from "couldn't read it" (auth, missing bucket, no gcloud).
+          const e = err as { stderr?: string; killed?: boolean; message?: string };
+          const detail = e.killed
+            ? "Timed out after 12s reading from GCS (check network and `gcloud auth login`)."
+            : String(e.stderr || e.message || err).trim();
+          const missing = /ENOENT|No URLs matched|not found|404/i.test(detail) && !/bucket does not exist/i.test(detail);
+          res.statusCode = missing ? 404 : 502;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "not_published", source: loc.where }));
+          res.end(JSON.stringify({ error: missing ? "not_published" : "unreadable", source: loc.where, detail: detail.slice(0, 400) }));
         }
       });
     },

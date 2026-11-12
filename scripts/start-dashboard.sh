@@ -9,12 +9,15 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# A DATA_SOURCE given on the command line wins over .env (e.g. DATA_SOURCE=local bash scripts/start-dashboard.sh).
+cli_source="${DATA_SOURCE:-}"
 if [[ -f .env ]]; then
   set -a
   # shellcheck disable=SC1091
   source .env
   set +a
 fi
+if [[ -n "$cli_source" ]]; then export DATA_SOURCE="$cli_source"; fi
 
 cd dashboard
 if [[ ! -d node_modules ]]; then
