@@ -9,7 +9,7 @@
 #   S1-Overlay: <paths>     these paths also belong in the demo's starting state (s1-start)
 #   Tooling: <paths>        presenter tooling (reset script, stage commands): copied onto EVERY
 #                           checkpoint, so whatever checkpoint you're on runs the latest tooling
-# Overlays are applied in commit order (later commits win) as a small commit on top of the
+# Paths no longer on main are removed. Overlays are applied in commit order (later commits win) as a small commit on top of the
 # checkpoint. Safe to run repeatedly: nothing changes if the tags are already right.
 set -euo pipefail
 
@@ -29,7 +29,14 @@ overlay_checkpoint() {
   git checkout -q --detach "$base"
   for entry in "$@"; do
     src="${entry%%:*}"
-    for p in ${entry#*:}; do git checkout -q "$src" -- "$p"; done
+    for p in ${entry#*:}; do
+      # A path that's gone from main (removed tooling) is removed from the checkpoint too.
+      if git cat-file -e "main:$p" 2>/dev/null; then
+        git checkout -q "$src" -- "$p"
+      else
+        git rm -q -r --ignore-unmatch -- "$p"
+      fi
+    done
   done
   tree="$(git write-tree)"
   if [[ "$tree" == "$(git rev-parse "$base^{tree}")" ]]; then
