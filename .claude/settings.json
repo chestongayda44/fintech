@@ -11,7 +11,11 @@
       "Bash(go run:*)",
       "Bash(go test:*)",
       "WebSearch",
-      "WebFetch(domain:fred.stlouisfed.org)"
+      "WebFetch(domain:fred.stlouisfed.org)",
+      "Bash(bash ops/ingest.sh:*)", "Bash(ops/.bin/freshness:*)", "Bash(go build:*)", "Bash(go test:*)",
+      "Bash(python -m pytest:*)", "Bash(python3 -m pytest:*)",
+      "Bash(cat:*)", "Bash(tail:*)", "Bash(head:*)", "Bash(grep:*)", "Bash(ls:*)",
+      "Bash(git diff:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git status:*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -23,6 +27,11 @@
     ]
   },
   "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command",
+      "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_on_stop.py\"",
+      "timeout": 300 } ] }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
