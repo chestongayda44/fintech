@@ -41,6 +41,19 @@ source scripts/personas.sh      # in each terminal
 ds    # Data Science (Vertex)    swe   # SWE (Bedrock)    sre   # SRE (Bedrock)
 ```
 
+## Hooks (team standards, enforced)
+- `.claude/hooks/guard_secrets.py` (PreToolUse): blocks writing secrets or card numbers.
+- `.claude/hooks/verify_on_stop.py` (Stop): Claude can't finish until the tests for what it changed
+  pass (pytest / Vitest / go test, picked by changed paths). Wire it in `.claude/settings.json` under
+  `"hooks"`, next to `"PreToolUse"`:
+  ```json
+  "Stop": [
+    { "hooks": [ { "type": "command",
+                   "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_on_stop.py\"",
+                   "timeout": 300 } ] }
+  ]
+  ```
+
 ## Stage commands
 Each demo stage's prompt is a project command in `.claude/commands/`: `/acquire`, `/explore`,
 `/fit-model`, `/fix-model`, `/graduate`, `/stress-panel`, `/incident`, `/incident-fix`. `scripts/update-checkpoints.sh` puts the latest

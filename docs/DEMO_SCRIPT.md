@@ -19,10 +19,27 @@ across three teams, in one tool.
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 | 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident & fix | `sre` · Bedrock | 2:00 | `s4-done` |
+| 6 | Incident & fix | `sre` · Bedrock | 2:20 | `s4-done` |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
+
+**The supervision dial (say it at each transition).** Match how much freedom Claude gets to how
+risky the work is, the way Anthropic's own teams do (auto-accept for prototyping, close supervision
+for core logic):
+
+| Stages | Work | Dial | What enforces it |
+|---|---|---|---|
+| 1–3 | Exploration in a notebook | **Open**: let it explore | Nothing reaches production from a notebook |
+| 4–5 | Production code | **Tighter**: plan first, tests required | Plan approval; the Stop hook won't let Claude finish until tests pass |
+| 6 | Production incident | **Tightest**: read-only diagnosis, a person applies the fix | `/incident` reads only; commands allowlisted; destructive ones denied |
+
+**Run order: overlap, don't wait.** One presenter supervising several agents is the point:
+- As soon as stage 4 *publishes* (the payload is in the bucket), switch to `swe` and approve the
+  stage 5 plan; narrate stage 4's tests and package while the dashboard builds in the browser.
+- While stage 5 builds, stage the incident off-screen (`bash scripts/simulate-incident.sh`).
+- Running two sessions at once doubles the model load: keep the DS stages on Vertex once quota allows,
+  so Bedrock only carries stages 5–6 (avoids 429 throttling).
 
 ---
 
@@ -42,9 +59,11 @@ The stage needs no web search, so it behaves the same on either cloud.
 - [ ] `go version` works (stage 6's freshness check is Go); `bash scripts/simulate-incident.sh` dry run done
 - [ ] In rehearsal, open `sre` in `../fintechco-prod` once and approve the Jupyter MCP prompt (or choose
       "continue without"), so it doesn't pop up on stage
+- [ ] Stop hook wired in `.claude/settings.json` (`Stop` → `.claude/hooks/verify_on_stop.py`, see README);
+      a quick check: ask `swe` to add a comment to `dashboard/src/lib/format.ts` and watch for
+      "Verified: Dashboard tests pass"
 - [ ] Stage 6 runs with no approval prompts: `/incident` only reads files, step 4 uses `!`. If prompts
-      still appear, use auto mode (Shift+Tab in the `sre` session) or add the
-      allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
+      still appear, add the allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
       copies it into production): `Bash(bash ops/ingest.sh:*)`, `Bash(ops/.bin/freshness:*)`,
       `Bash(go build:*)`, `Bash(go test:*)`, `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`,
       `Bash(cat:*)`, `Bash(tail:*)`, `Bash(head:*)`, `Bash(grep:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
@@ -63,10 +82,15 @@ In the `ds` terminal: `/status`
 If DS is on Bedrock that day: show `/status` in `ds` and say "this one could just as well point at
 Vertex — it's one environment variable", then move on.
 
-Open `CLAUDE.md` for 10 seconds:
-> "This is the team's shared context: conventions, data rules, guardrails. Every persona reads it."
+Open `CLAUDE.md` for 10 seconds, then `.claude/settings.json`'s hooks:
+> "This is the team's shared context: conventions, data rules, guardrails. Every persona reads it.
+> And it's enforced: one hook blocks secrets and card numbers from ever being written; another won't
+> let Claude say it's done until the tests pass. That's the self-verifying loop Anthropic's own
+> Claude Code team uses."
 
 ## 1 · Acquire (2:00) — `ds`
+> Dial: **open**. "It's a notebook. I'm going to let it explore."
+
 **Type:** `/acquire`
 <details><summary>Full prompt</summary>
 
@@ -136,6 +160,9 @@ it explained *why* in economic terms. That's the difference between a code gener
 **Scoreboard:** "Data → defensible stress view: typical 2–3 days → elapsed ~7 min."
 
 ## 4 · Graduate & publish (1:30) — `ds`
+> Dial: **tighter**. "Now it's production code, so the rules change: tests are required, and the hook
+> enforces it."
+
 **Type:** `/graduate`
 <details><summary>Full prompt</summary>
 
@@ -150,8 +177,12 @@ stress payload through risk_model.storage, and run the tests.
 
 **Fallback / time-saver:** if over time, `scripts/demo-reset.sh s2-done` and show the finished package
 and green tests.
-**Point out:** notebook → tested code is the handoff that usually takes a sprint. The published payload
-in GCS is what SWE builds on next.
+**Point out:** notebook → tested code is the handoff that usually takes a sprint. When Claude finishes,
+the hook's *"Verified: Python tests pass"* line appears without anyone asking. The published payload in
+GCS is what SWE builds on next.
+
+**Overlap:** as soon as the publish step is done, switch to `swe` and start stage 5 (resume + approve);
+come back to this terminal to walk through the package and tests while the dashboard builds.
 
 ## 5 · Dashboard (3:00) — `swe` · Bedrock
 Switch to the `swe` terminal and put the browser beside it, open on the dashboard. Its empty
@@ -161,6 +192,8 @@ Switch to the `swe` terminal and put the browser beside it, open on the dashboar
 ```
 swe --resume <PLAN_SESSION_ID> --fork-session
 ```
+> Dial: **tighter**. "Production front-end: plan first, a person approves, tests prove it."
+
 Scroll the plan for ~15s: "here's exactly what it intends to change; nothing happens until a person
 approves." Approve with auto-accept edits. (If the approve buttons don't reappear after resume:
 Shift+Tab out of plan mode and type `Approved, implement the plan.`)
@@ -196,6 +229,7 @@ TypeScript matches the scenarios the Python model published.
   both charts move together.
 - The parity tests: TypeScript reproduces the Python model's published scenarios to 3 decimals.
   "The dashboard can't quietly disagree with the model. A test fails first."
+- The hook's *"Verified: Dashboard tests pass"* line when Claude finishes: no one had to ask.
 
 **Expected:** at +2 points, peak impact ≈ +1.9 to +2.2 points of charge-offs in 2027 Q4 (matches stage 3).
 **Speed knob:** `/effort low` before approving (the plan is already done; the coding goes faster).
@@ -213,6 +247,8 @@ touched: production is a separate checkout at `../fintechco-prod` that publishes
 reads. Have the `sre` terminal ready in that folder, already at low effort:
 `cd ../fintechco-prod && sre --permission-mode acceptEdits`, then `/effort low`.
 
+> Dial: **tightest**. "Production at 2 a.m.: read-only diagnosis; a person decides the fix."
+
 **1 · Kick off the diagnosis first (5s).** Type `/incident` *before* you start talking, so Claude
 works while you set the scene.
 
@@ -228,6 +264,13 @@ that look fresh are worse than an outage."
 added in stage 1 (sensible in a notebook) let a keyless nightly job publish 2025 data and exit 0.
 - "One alert in, root cause out, reading a shell job, Python and Go together. One team's sensible
   choice became another team's incident. That's why it's one tool across all three teams."
+
+**3b · What Risk is seeing (20s).** Take a screenshot of the stale dashboard (Cmd+Shift+4), paste it into
+the `sre` prompt (Ctrl+V, or drag the file in) and ask:
+`This is what Risk sees right now. Which numbers are wrong, and what will they show after the fix?`
+Claude reads the screenshot (*data through 2025 Q4*) and ties it back to the root cause: the incident
+from the business's point of view, the way Anthropic's Data Infrastructure team diagnoses from
+dashboard screenshots.
 
 **4 · The fix, confirmed live (30s).** "Here's the fix the team merged: production fails loudly,
 payloads record where their data came from, a regression test, and a runbook section." In the Claude
