@@ -105,15 +105,33 @@ def load_seed(series_id: str, seed_dir: Path = SEED_DIR) -> pd.Series:
     return parse_observations(df.to_dict("records"))
 
 
+def fallback_allowed() -> bool:
+    """Seed fallback is opt-in (ALLOW_SEED_FALLBACK=1): fine in notebooks and dev, never in production jobs."""
+    return os.environ.get("ALLOW_SEED_FALLBACK", "").strip().lower() in {"1", "true", "yes"}
+
+
 def load_all(
-    start: str = "1990-01-01", prefer_live: bool = True, seed_dir: Path = SEED_DIR
+    start: str = "1990-01-01",
+    prefer_live: bool = True,
+    seed_dir: Path = SEED_DIR,
+    allow_fallback: bool | None = None,
 ) -> tuple[dict[str, pd.Series], str]:
-    """Load every series in SERIES. Returns (data, source) where source is 'live' or 'seed'."""
+    """Load every series in SERIES. Returns (data, source) where source is 'live' or 'seed'.
+
+    If the live API fails, falling back to cached seed data is only allowed when explicitly enabled
+    (allow_fallback, or ALLOW_SEED_FALLBACK=1). Otherwise this raises: a production job must fail
+    loudly rather than publish old data that looks current.
+    """
     if prefer_live:
         try:
             data = {name: fetch_series(sid, start) for name, sid in SERIES.items()}
             return data, "live"
         except FredError as exc:
+            if not (fallback_allowed() if allow_fallback is None else allow_fallback):
+                raise FredError(
+                    f"Live FRED unavailable ({exc}) and seed fallback is disabled. Refusing to publish "
+                    "cached data; set ALLOW_SEED_FALLBACK=1 only for notebooks and dev."
+                ) from None
             log.warning("Live FRED unavailable (%s); falling back to seed data", exc)
     data = {name: load_seed(sid, seed_dir) for name, sid in SERIES.items()}
     data = {name: s[s.index >= pd.Timestamp(start)] for name, s in data.items()}

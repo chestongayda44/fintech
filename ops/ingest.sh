@@ -7,6 +7,8 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p ops/logs
+# Production never publishes cached seed data: if FRED is unreachable the job must fail and alert.
+unset ALLOW_SEED_FALLBACK
 log="ops/logs/ingest-$(date -u +%Y%m%dT%H%M%SZ).log"
 
 {

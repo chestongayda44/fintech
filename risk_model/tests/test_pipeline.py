@@ -38,11 +38,45 @@ def test_parse_empty():
     assert parse_observations([]).empty
 
 
-def test_fetch_without_key_falls_back_to_seed(monkeypatch, seed_dir):
+def test_fetch_without_key_falls_back_to_seed_when_allowed(monkeypatch, seed_dir):
     monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("ALLOW_SEED_FALLBACK", "1")
     data, source = load_all(seed_dir=seed_dir)
     assert source == "seed"
     assert set(data) == {"delinquency", "chargeoff", "unrate", "fedfunds", "cpi"}
+
+
+def test_live_failure_without_opt_in_fails_loudly(monkeypatch, seed_dir):
+    """Regression (stage 6 incident): a keyless production job must not quietly publish cached data."""
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.delenv("ALLOW_SEED_FALLBACK", raising=False)
+    with pytest.raises(FredError, match="seed fallback is disabled"):
+        load_all(seed_dir=seed_dir)
+
+
+def test_explicit_offline_mode_still_reads_seed(monkeypatch, seed_dir):
+    monkeypatch.delenv("ALLOW_SEED_FALLBACK", raising=False)
+    _, source = load_all(seed_dir=seed_dir, prefer_live=False)
+    assert source == "seed"
+
+
+def test_pipeline_exits_nonzero_instead_of_publishing_stale_data(tmp_path, seed_dir):
+    """Regression (stage 6 incident): the CLI the nightly job runs exits 1 and publishes nothing."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    env = {k: v for k, v in os.environ.items() if k not in {"FRED_API_KEY", "ALLOW_SEED_FALLBACK"}}
+    env.update(RISK_MODEL_SEED_DIR=str(seed_dir), DATA_SOURCE="local")
+    published = Path(__file__).resolve().parents[2] / "data" / "published" / "stress_payload.json"
+    before = published.stat().st_mtime if published.exists() else None
+    r = subprocess.run([sys.executable, "-m", "risk_model"], env=env, capture_output=True, text=True,
+                       cwd=Path(__file__).resolve().parents[2])
+    assert r.returncode == 1
+    assert "seed fallback is disabled" in r.stderr
+    after = published.stat().st_mtime if published.exists() else None
+    assert after == before  # nothing published
 
 
 def test_search_series_parses_and_never_leaks_key(monkeypatch):
@@ -203,6 +237,12 @@ def test_real_data_stress_response_is_plausible():
 
 
 # --- payload / contract ----------------------------------------------------
+
+def test_payload_records_its_data_source(synthetic_data):
+    panel = build_quarterly_panel(synthetic_data)
+    assert stress_payload(panel, fit(panel))["data_source"] == "live"
+    assert stress_payload(panel, fit(panel), data_source="seed")["data_source"] == "seed"
+
 
 def test_payload_matches_contract(synthetic_data):
     panel = build_quarterly_panel(synthetic_data)

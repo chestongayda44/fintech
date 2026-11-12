@@ -25,6 +25,7 @@ Everything the dashboard needs to recompute projections client-side for any shoc
   "schema_version": 2,
   "generated_at": "2026-11-11T14:00:00Z",
   "source": "FRED",
+  "data_source": "live",
   "series": {"chargeoff": "CORCCACBS", "delinquency": "DRCCLACBS", "unrate": "UNRATE"},
   "model": {
     "type": "OLS",
@@ -50,6 +51,9 @@ Everything the dashboard needs to recompute projections client-side for any shoc
 ```
 
 `unrate_history` holds the last 5 observed quarters (oldest first), ending at `last_observed`.
+
+`data_source` is `"live"` (FRED API) or `"seed"` (cached data, only allowed with
+`ALLOW_SEED_FALLBACK=1` outside production). The freshness check pages on `"seed"`.
 
 ### Projection rule (dashboard must match `risk_model.model.project`)
 Let `u` be `unrate_history` values followed by the projected path. For quarter h = 1..H:

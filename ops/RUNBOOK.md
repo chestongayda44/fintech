@@ -22,9 +22,29 @@ Symptom: `PAGE stress-payload-stale`.
 1. Check the ingest job ran: newest `ops/logs/ingest-*.log`.
 2. If it failed, follow **Ingest job failed** above.
 3. If it didn't run, check the scheduler, then run it by hand: `bash ops/ingest.sh`.
-4. Re-run the check: `go run ./ops/freshness`.
+4. **If it ran and reported OK**, see **Stale data published by a green job** below.
+5. Re-run the check: `go run ./ops/freshness`.
+
+## Stale data published by a green job
+Symptom: freshness pages (`data-behind` or `seed-data`) while the ingest log ends `ingest finished: OK`.
+
+Cause (incident 2026-11, fixed): when the FRED API was unreachable, the pipeline fell back to cached
+seed data, published it and exited 0. After the FRED key rotation the job's environment had no
+`FRED_API_KEY`, so every night it republished the old cache and looked healthy.
+
+Now: seed fallback is opt-in (`ALLOW_SEED_FALLBACK=1`, laptops/notebooks only; `ops/ingest.sh` unsets
+it), so production fails loudly instead, and payloads record `data_source` (`live`/`seed`), which the
+freshness check pages on.
+
+1. Confirm: `grep -l "falling back to seed" ops/logs/ingest-*.log` and check the payload's `data_source`.
+2. Check the job's environment has `FRED_API_KEY` (from the `fred-api-key` secret). Never log it.
+3. Re-run by hand: `bash ops/ingest.sh`. The log must say `data source: live`.
+4. Re-run the check: `go run ./ops/freshness` must print `OK`.
+5. Never set `ALLOW_SEED_FALLBACK` in production to make an alert go away.
 
 ## Rotating the FRED API key
 1. Generate a new key at fred.stlouisfed.org (account > API keys).
 2. Update it in the secret manager entry `fred-api-key`.
-3. Revoke the old key.
+3. Restart or redeploy the nightly job so its environment picks up the new key.
+4. Run the job by hand (`bash ops/ingest.sh`) and confirm `data source: live` in the log.
+5. Revoke the old key.

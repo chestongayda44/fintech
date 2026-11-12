@@ -143,8 +143,13 @@ def stress_payload(
     shock_pp: float = 2.0,
     horizon: int = 8,
     ramp: int = 4,
+    data_source: str = "live",
 ) -> dict[str, Any]:
-    """Build the JSON payload the dashboard consumes (schema in docs/DATA_CONTRACT.md)."""
+    """Build the JSON payload the dashboard consumes (schema in docs/DATA_CONTRACT.md).
+
+    data_source records whether the inputs came from the live FRED API or cached seed data, so
+    monitoring can tell stale-but-published data from a healthy run.
+    """
     last_date, last, hist = last_state(panel)
     u_hist = [u for _, u in hist]
     baseline = project(model, last["chargeoff"], u_hist, last_date, 0.0, horizon, ramp)
@@ -154,6 +159,7 @@ def stress_payload(
         "schema_version": 2,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "FRED",
+        "data_source": data_source,
         "series": {k: SERIES[k] for k in ("chargeoff", "delinquency", "unrate")},
         "model": {
             "type": "OLS",

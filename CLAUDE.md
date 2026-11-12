@@ -27,7 +27,8 @@ dashboard, SRE keeps the data pipeline healthy.
 - Delinquency/charge-off series are quarterly; unemployment, fed funds, CPI are monthly.
   Aggregate monthly → quarterly by mean of available months (require ≥2 of 3) before joining.
 - Storage goes through `risk_model.storage` (`DATA_SOURCE=gcs|local`). Don't call GCS directly elsewhere.
-- If the FRED API is unavailable, fall back to `data/seed/` and say so.
+- Seed fallback (`data/seed/`) is for notebooks and dev only, and only with `ALLOW_SEED_FALLBACK=1`.
+  Production jobs must fail loudly if FRED is unavailable; payloads record `data_source`.
 
 ## Notebook hygiene (it's shown live)
 - Charts: `plt.subplots(..., layout="constrained")`, not `tight_layout()`; no warnings in cell output.
