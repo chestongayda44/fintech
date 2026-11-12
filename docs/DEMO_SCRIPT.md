@@ -231,8 +231,9 @@ added in stage 1 (sensible in a notebook) let a keyless nightly job publish 2025
 payloads record where their data came from, a regression test, and a runbook section." In the Claude
 prompt (`!` runs the shell directly, no model, no approval):
 ```
-! git reset -q --hard s4-done && git show --stat --format=%s HEAD && bash ops/ingest.sh | tail -2 && ops/.bin/freshness
+! bash scripts/apply-fix.sh
 ```
+It puts production on `s4-done`, shows the fix's summary and files, re-runs the job and the check:
 → `data source: live` … `ingest finished: OK` … `OK stress-payload-fresh`. Reload the dashboard: back
 to the current quarter.
 
