@@ -34,6 +34,18 @@ for core logic):
 | 4–5 | Production code | **Tighter**: plan first, tests required | Plan approval; the Stop hook won't let Claude finish until tests pass |
 | 6 | Production incident and fleet audit | **Tightest**: read-only diagnosis and sweep, a person applies the fix | `/incident` reads only; reviewer subagents can't edit; commands allowlisted; destructive ones denied |
 
+**The security thread (the CTO's #1 concern: one visible control + one sentence per stage).**
+Security is shown, not claimed. Say "security" out loud at each beat marked **Security** below.
+
+| Stage | What the audience sees | The sentence |
+|---|---|---|
+| 0 | `/status` (Bedrock/Vertex); Claude refused `.env`; card number blocked | "It runs in your clouds, can't see your secrets, and can't write card data." |
+| 1 | Key read from the environment, never in the notebook | "Credentials never enter the conversation or the output." |
+| 3 | Assumptions stated, wrong model caught | "Model risk governance: documented, validated, explainable." |
+| 4 | Every write scanned by the hook; publish to your bucket under your IAM | "No new data paths: your storage, your permissions." |
+| 5 | Plan approval before any change | "Change control: a person approves, the diff is reviewable." |
+| 6 | Read-only diagnosis; reviewers that can't edit; the sweep finds secrets and PII | "Least privilege for the agent, and it finds your exposures." |
+
 **Run order: overlap, don't wait.** One presenter supervising several agents is the point:
 - As soon as stage 4 *publishes* (the payload is in the bucket), switch to `swe` and approve the
   stage 5 plan; narrate stage 4's tests and package while the dashboard builds in the browser.
@@ -50,7 +62,10 @@ for core logic):
 - [ ] `ls data/seed/*.csv` shows 5 files (fallback data survives resets)
 - [ ] `ds` session: `/mcp` shows `jupyter` connected; `/status` shows the intended provider (Vertex, or Bedrock if `DS_PROVIDER=bedrock`)
 - [ ] Vertex smoke test passes (one short prompt) if using Vertex — quota can silently be 0 on new projects
-- [ ] `swe`/`sre` sessions: `/status` shows Bedrock; `aws sso login` fresh
+- [ ] `swe`/`sre` sessions: `/status` shows Bedrock; `aws login` done **that morning** (sessions last 12h)
+- [ ] AWS identity is least-privilege, not root: `aws sts get-caller-identity` must not end in `:root`
+      (it can appear on screen; a security-minded audience will notice)
+- [ ] Guardrail check: in a session, `What's in the .env file?` is refused
 - [ ] `data/seed/*.csv` present (real FRED); `DATA_SOURCE=gcs`, bucket seeded
 - [ ] `bash scripts/start-dashboard.sh` running; browser on http://localhost:5173 showing the empty
       "Stress scenarios" slot (it reads whatever the DS stage publishes)
@@ -65,9 +80,12 @@ for core logic):
 - [ ] Stage 6 runs with no approval prompts: `/incident` only reads files, step 4 uses `!`. If prompts
       still appear, add the allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
       copies it into production): `Bash(bash ops/ingest.sh:*)`, `Bash(ops/.bin/freshness:*)`,
-      `Bash(go build:*)`, `Bash(go test:*)`, `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`,
-      `Bash(cat:*)`, `Bash(tail:*)`, `Bash(head:*)`, `Bash(grep:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
-      `Bash(git log:*)`, `Bash(git show:*)`, `Bash(git status:*)`
+      `Bash(bash scripts/apply-fix.sh:*)`, `Bash(go build:*)`, `Bash(go test:*)`,
+      `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
+      `Bash(git log:*)`, `Bash(git show:*)`, `Bash(git status:*)`.
+      **Don't allowlist `cat`, `head`, `tail` or `grep`:** the `.env` deny rules cover Claude's file
+      tools and `cat .env`, so a pre-approved `head .env` would print your keys. Claude reads files with
+      its own tools, which need no approval.
 - [ ] `PYTHON=$(which python)` in `.env` (the job and Claude's re-run use it)
 - [ ] `/sweep` dry run in `../fintechco-prod`: compare with `docs/FLEET_FINDINGS.md` (4 criticals found?)
 - [ ] Bedrock quota: the sweep runs several subagents at once. If you see 429s, request higher limits,
@@ -82,6 +100,11 @@ In the `ds` terminal: `/status`
 > "Same Claude Code, running inside your GCP project through Vertex AI. The engineering terminals run
 > through Bedrock in your AWS account. Code and prompts stay in your clouds, under your IAM."
 
+**Security:** "First answer to your security team: model calls go through your own AWS and GCP
+accounts, under your IAM, on your contracts, auditable with your own CloudTrail and Cloud Audit Logs."
+(Before saying "auditable", check which log types are enabled in both accounts. Use a least-privilege
+identity, not root; see pre-flight.)
+
 If DS is on Bedrock that day: show `/status` in `ds` and say "this one could just as well point at
 Vertex — it's one environment variable", then move on.
 
@@ -91,7 +114,17 @@ Open `CLAUDE.md` for 10 seconds, then `.claude/settings.json`'s hooks:
 > let Claude say it's done until the tests pass. That's the self-verifying loop Anthropic's own
 > Claude Code team uses."
 
-**Live guardrail (20s), in the `swe` terminal at `/effort low`:**
+**Live guardrails (30s), in the `swe` terminal at `/effort low`.** Two refusals, both enforced by the
+repo's settings rather than by the model's good behaviour:
+
+1. Secrets are off-limits:
+```
+What's in the .env file?
+```
+The deny rules in `.claude/settings.json` (`Read(./.env)`, `Bash(cat .env:*)`) refuse it. "It can't
+read your secrets file even if someone asks it to."
+
+2. Card data can't be written:
 ```
 Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/test/fixtures/sample_txn.json so we can test masking.
 ```
@@ -118,7 +151,10 @@ fails. Run it and summarise what we got.
 
 **Point out:** Claude searching FRED's catalog and *choosing* series with reasons (what an analyst does);
 cells appearing *in the notebook* and executing;
-the `"."` missing-value handling; key read from env, never shown.
+the `"."` missing-value handling.
+**Security:** the API key is read from the environment inside the kernel; it never appears in the
+prompt, the notebook, its output or a URL (CLAUDE.md forbids it, the hook would block a hard-coded
+one). "Credentials never enter the conversation." The Jupyter MCP server is local and token-protected.
 **Scoreboard:** "Find & pull 5 sources: typical ½ day → elapsed ~2 min."
 
 ## 2 · Clean & explore (1:30) — `ds`
@@ -168,6 +204,9 @@ charge-offs**, about 6 quarters out. (Rehearsal 11 Nov: +0.54, +2.2pp at 2027Q4.
 **Talk track:** "This is the moment that matters to your data scientists. The first model looked great —
 R² 0.97 — and was wrong. Claude caught it because your team's standards are written into CLAUDE.md, and
 it explained *why* in economic terms. That's the difference between a code generator and a colleague."
+**Security / model risk:** "For a bank this is governance, not just quality: the assumptions are
+written down, the model was challenged before anyone relied on it, and it's interpretable. That's
+what your model risk team (and the Fed's SR 11-7 guidance) asks for."
 **Scoreboard:** "Data → defensible stress view: typical 2–3 days → elapsed ~7 min."
 
 ## 4 · Graduate & publish (1:30) — `ds`
@@ -191,6 +230,10 @@ and green tests.
 **Point out:** notebook → tested code is the handoff that usually takes a sprint. When Claude finishes,
 the hook's *"Verified: Python tests pass"* line appears without anyone asking. The published payload in
 GCS is what SWE builds on next.
+
+**Security:** every file Claude writes passed the secret and card-number scan; the results went to
+your bucket using your credentials and IAM. "No new data paths, no new copies of data outside your
+cloud."
 
 **Overlap:** as soon as the publish step is done, switch to `swe` and start stage 5 (resume + approve);
 come back to this terminal to walk through the package and tests while the dashboard builds.
@@ -241,6 +284,9 @@ TypeScript matches the scenarios the Python model published.
 - The parity tests: TypeScript reproduces the Python model's published scenarios to 3 decimals.
   "The dashboard can't quietly disagree with the model. A test fails first."
 - The hook's *"Verified: Dashboard tests pass"* line when Claude finishes: no one had to ask.
+- **Security:** "This is change control: the plan is the change request, a person approved it, and
+  every line is a reviewable diff before it merges. The dashboard reads from your bucket with your
+  credentials; Claude added no new access."
 
 **Expected:** at +2 points, peak impact ≈ +1.9 to +2.2 points of charge-offs in 2027 Q4 (matches stage 3).
 **Speed knob:** `/effort low` before approving (the plan is already done; the coding goes faster).
@@ -299,6 +345,11 @@ blocked a force-push of shared git tags and handed it back to a human.
 - **loan-origination:** bureau error → default score 680, above the approval threshold.
 - **payments-gateway:** full card numbers in error logs (PCI).
 - **kyc-checks:** SSNs and dates of birth in logs.
+
+**Security:** "Look at what the agent was allowed to do here: read and search. The reviewers can't edit,
+the diagnosis ran no commands, the fix went through a person. And look at what it found: card numbers
+and SSNs in logs, a hard-coded credential, a sanctions screen that can fail open. Least privilege for
+the agent, and it finds your exposures."
 
 > "One incident became a fleet-wide security and reliability audit in about a minute: sixteen
 > services, five languages, read-only. That's a week of review nobody on your team would ever get
