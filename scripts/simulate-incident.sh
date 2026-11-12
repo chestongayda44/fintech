@@ -35,6 +35,18 @@ main() {
   command -v go >/dev/null || fail "Go isn't installed (the freshness check is Go). Run: brew install go"
   git rev-parse -q --verify refs/tags/s3-done >/dev/null || fail "no s3-done checkpoint. Run: bash scripts/update-checkpoints.sh"
   if [[ -f .env ]]; then set -a; source .env; set +a; fi
+  # The pipeline needs a Python with its packages; pick one that has them (PYTHON in .env wins).
+  if [[ -z "${PYTHON:-}" ]]; then
+    local candidate
+    for candidate in python python3; do
+      if command -v "$candidate" >/dev/null && "$candidate" -c "import pandas, statsmodels" 2>/dev/null; then
+        PYTHON="$(command -v "$candidate")"; break
+      fi
+    done
+  fi
+  [[ -n "${PYTHON:-}" ]] && "$PYTHON" -c "import pandas, statsmodels" 2>/dev/null \
+    || fail "no Python with the pipeline's packages. Run: pip install -r requirements.txt, then add PYTHON=\$(which python) to .env"
+  export PYTHON
   if [[ "${DATA_SOURCE:-local}" == "gcs" ]]; then
     [[ -n "${GCS_BUCKET:-}" ]] || fail "DATA_SOURCE=gcs but GCS_BUCKET is empty in .env"
     gcloud storage ls "gs://$GCS_BUCKET" >/dev/null 2>&1 \
@@ -53,6 +65,9 @@ main() {
 
   # Same environment, data and Claude approvals as the demo folder; same publish target.
   if [[ -f .env ]]; then cp .env "$prod/.env"; fi
+  if ! grep -q '^PYTHON=..*' "$prod/.env" 2>/dev/null; then
+    { grep -v '^PYTHON=' "$prod/.env" 2>/dev/null || true; echo "PYTHON=$PYTHON"; } > "$prod/.env.tmp" && mv "$prod/.env.tmp" "$prod/.env"
+  fi
   if [[ -f .claude/settings.local.json ]]; then cp .claude/settings.local.json "$prod/.claude/settings.local.json"; fi
   mkdir -p "$prod/data/seed" data/published
   cp data/seed/*.csv "$prod/data/seed/"
@@ -62,7 +77,7 @@ main() {
 
   # 2. Production's fallback cache: the snapshot taken when the pipeline was set up (through 2025 Q4).
   rm -rf ops/.prod-cache ops/logs && mkdir -p ops/.prod-cache ops/logs
-  "${PYTHON:-python3}" - "$prod" <<'PY'
+  "$PYTHON" - "$prod" <<'PY'
 import csv, pathlib, sys
 root = pathlib.Path(sys.argv[1])
 for src in sorted((root / "data" / "seed").glob("*.csv")):
@@ -95,6 +110,9 @@ $(cat ops/logs/alert.txt)"
   fi
   if (( VERBOSE )); then cat ops/logs/alert.txt; fi
 
+  if ! grep -q '^PYTHON=..*' "$root/.env" 2>/dev/null; then
+    echo "Note: add PYTHON=$PYTHON to .env so Claude's re-run of the job uses the same Python."
+  fi
   echo "Incident staged in ../$(basename "$prod") (demo folder untouched). On stage: cat ../$(basename "$prod")/ops/logs/alert.txt, reload the dashboard, then cd ../$(basename "$prod") && sre and type /incident."
 }
 
