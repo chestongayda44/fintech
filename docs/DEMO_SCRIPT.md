@@ -19,7 +19,7 @@ across three teams, in one tool.
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 | 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident & fix | `sre` · Bedrock | 2:30 | `s4-done` |
+| 6 | Incident & fix | `sre` · Bedrock | 2:00 | `s4-done` |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
@@ -204,72 +204,66 @@ demo the finished panel.
 **Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
-## 6 · Incident & fix (2:30) — `sre` · Bedrock, in `../fintechco-prod`
+## 6 · Incident & fix (2:00) — `sre` · Bedrock, in `../fintechco-prod`
 **Off-screen, before stage 6:** `bash scripts/simulate-incident.sh` (~10s; e.g. while stage 5 builds).
 It prints one line when the incident is staged, or exactly what's missing. Your demo folder is not
 touched: production is a separate checkout at `../fintechco-prod` that publishes where the dashboard
-reads. Have the `sre` terminal ready in that folder:
-`cd ../fintechco-prod && sre --permission-mode acceptEdits` (edits auto-accepted; commands follow the
-allowlist in `.claude/settings.local.json`, see pre-flight).
+reads. Have the `sre` terminal ready in that folder, already at low effort:
+`cd ../fintechco-prod && sre --permission-mode acceptEdits`, then `/effort low`.
 
+**1 · Kick off the diagnosis first (5s).** Type `/incident` *before* you start talking, so Claude
+works while you set the scene.
+
+**2 · The page, while it works (40s).**
 > "Fast-forward three weeks. It's 2 a.m. and the freshness check just paged SRE."
 
-**1 · The page (20s).** `cat ../fintechco-prod/ops/logs/alert.txt`, then reload the dashboard: *FRED
+`cat ../fintechco-prod/ops/logs/alert.txt` (in a second tab), then reload the dashboard (Cmd+R): *FRED
 data through 2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk numbers
 that look fresh are worse than an outage."
 
-**2 · Diagnose (45s).** Type `/incident`. Claude reads the alert and job log, finds
-`WARNING Live FRED unavailable (FRED_API_KEY is not set); falling back to seed data`, and traces it to
-the seed fallback Data Science added in stage 1: sensible in a notebook, dangerous in a nightly job.
-It proposes the fix without changing anything.
+**3 · Root cause (30s).** Read Claude's bullets: the job log says
+`Live FRED unavailable (FRED_API_KEY is not set); falling back to seed data`; the fallback Data Science
+added in stage 1 (sensible in a notebook) let a keyless nightly job publish 2025 data and exit 0.
 - "One alert in, root cause out, reading a shell job, Python and Go together. One team's sensible
   choice became another team's incident. That's why it's one tool across all three teams."
 
-**3 · Fix (45s).** Type `/incident-fix`. Minimal change (fallback becomes opt-in for dev; production
-fails loudly) plus one regression test; it runs the tests. Talk while it works:
-- Guardrails: SRE pre-approved read-only and ops commands; anything else still asks; `rm -rf` and
-  force-push are denied outright. True story: while building this demo, Claude's own safety check
-  blocked a force-push of shared git tags and handed it back to a human.
-
-**4 · Confirm (20s).** In the Claude prompt, run it yourself with `!` (no model, no approval):
-`! bash ops/ingest.sh && ops/.bin/freshness` → `data source: live` … `OK`. Reload the dashboard:
-back to the current quarter.
-
-**5 · The complete fix (10s).** `! git diff --stat s3-done s4-done`: "What the team merged the next
-morning: the same fix plus the runbook section and the rule in CLAUDE.md, so nobody reintroduces it."
-
-<details><summary>What the commands ask for</summary>
-
-`/incident`
+**4 · The fix, confirmed live (30s).** "Here's the fix the team merged: production fails loudly,
+payloads record where their data came from, a regression test, and a runbook section." In the Claude
+prompt (`!` runs the shell directly, no model, no approval):
 ```
-We just got paged: the freshness check is failing (alert in ops/logs/alert.txt), yet last night's
-ingest job reported success. Find the root cause from the job logs in ops/logs/ and the code.
-Don't change anything yet. Answer in five short bullets or fewer: what happened, why the job looked
-green, and the fix you propose.
+! git reset -q --hard s4-done && git show --stat --format=%s HEAD && bash ops/ingest.sh | tail -2 && ops/.bin/freshness
 ```
-`/incident-fix`
+→ `data source: live` … `ingest finished: OK` … `OK stress-payload-fresh`. Reload the dashboard: back
+to the current quarter.
+
+**5 · Guardrails (15s, while the job runs).** SRE pre-approved read-only and ops commands; anything
+else still asks; `rm -rf` and force-push are denied outright. True story: while building this demo,
+Claude's own safety check blocked a force-push of shared git tags and handed it back to a human.
+
+<details><summary>What /incident asks for</summary>
+
 ```
-Go ahead with the fix: production must fail loudly instead of publishing cached seed data. Keep the
-diff minimal: the code change plus one regression test, then run the Python tests. Don't touch the
-runbook or docs; summarise the change in two sentences when done.
+We just got paged: the freshness check is failing, yet last night's ingest job reported success.
+Start from ops/logs/alert.txt and the newest ops/logs/ingest-*.log, then follow what the log says
+into the code. Read only what you need; don't run anything, don't read tests or the dashboard, and
+don't change anything. Answer in five short bullets or fewer: what happened, why the job looked
+green, and the fix you'd make.
 ```
 </details>
 
-**Optional, only if ahead of time (30s): headless review**, same as CI would run, from a shell in
-`../fintechco-prod`:
-```
-git diff s3-done | sre -p "Review this diff as a senior SRE: correctness, failure modes, and anything that could page us again. Five bullets max."
-```
+**Optional, only if ahead of time:** have Claude write the fix live with `/incident-fix` (minimal fix
+plus one regression test; ~1–2 min at low effort) instead of step 4's reset, then run
+`! bash ops/ingest.sh && ops/.bin/freshness`. Or a headless review from a shell in `../fintechco-prod`:
+`git diff s3-done s4-done | sre -p "Review this diff as a senior SRE. Five bullets max."`
 
-**Speed knob:** `/effort low` in the `sre` session before `/incident-fix`.
-**Fallback:** in `../fintechco-prod`: `git reset --hard s4-done`, then show `git show --stat HEAD`,
-`python -m pytest -q` and the new runbook section. Re-running the job needs the live FRED API; if the
-venue network is down, the job now *fails loudly*, which is the point.
-**Scoreboard:** "Page to verified fix, with a regression test: typical 2–4 hours → elapsed ~2 min."
+**Fallback:** if the diagnosis is still running after ~60s, go straight to step 4; the reset to
+`s4-done` and the `OK` tell the story. Re-running the job needs the live FRED API; if the venue
+network is down, the job now *fails loudly*, which is the point.
+**Scoreboard:** "Page to root cause: typical an hour of log-diving → elapsed under a minute."
 
 **Talk track (closing the demo):** "One request from Risk, three teams, two clouds, one tool:
-a model in the morning, a product by lunch, and when it broke at 2 a.m., found and fixed with a test
-before anyone was fully awake. That's what we'd measure in your pilot."
+a model in the morning, a product by lunch, and when it broke at 2 a.m., the root cause in under a
+minute and a fix with a test before anyone was fully awake. That's what we'd measure in your pilot."
 
 ---
 
