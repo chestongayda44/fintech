@@ -5,6 +5,12 @@ set -euo pipefail
 
 main() {
   cd "$(dirname "$0")/.."
+  # Production only: this resets the checkout. In the demo folder it would wipe the live demo work.
+  if [[ "$(git rev-parse --git-dir)" == "$(git rev-parse --git-common-dir)" ]]; then
+    echo "apply-fix: run this in the production checkout, not the demo folder:" >&2
+    echo "  cd ../fintechco-prod && bash scripts/apply-fix.sh" >&2
+    exit 1
+  fi
   # Works from a plain terminal tab: production's .env has the FRED key, PYTHON and DATA_SOURCE.
   if [[ -f .env ]]; then set -a; source .env; set +a; fi
   git reset -q --hard s4-done
