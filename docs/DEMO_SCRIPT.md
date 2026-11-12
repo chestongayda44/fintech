@@ -7,7 +7,7 @@ across three teams, in one tool.
 **After the demo:** `git worktree remove --force ../fintechco-prod` removes the production checkout.
 
 **Commands:** every stage prompt is a project command in `.claude/commands/` (type `/acquire`,
-`/explore`, …). Every checkpoint carries the latest commands (see `scripts/update-checkpoints.sh`).
+`/explore`, … `/incident`, `/incident-fix`). Every checkpoint carries the latest commands (see `scripts/update-checkpoints.sh`).
 
 **Screen layout:** left = JupyterLab (notebook visible), right = terminal(s). Scoreboard overlay in a corner.
 
@@ -19,10 +19,27 @@ across three teams, in one tool.
 | 3 | Model & stress | `ds` · Vertex* | 2:30 | |
 | 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
 | 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident & fix | `sre` · Bedrock | 3:00 | `s4-done` |
+| 6 | Incident & fix | `sre` · Bedrock | 2:20 | `s4-done` |
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
+
+**The supervision dial (say it at each transition).** Match how much freedom Claude gets to how
+risky the work is, the way Anthropic's own teams do (auto-accept for prototyping, close supervision
+for core logic):
+
+| Stages | Work | Dial | What enforces it |
+|---|---|---|---|
+| 1–3 | Exploration in a notebook | **Open**: let it explore | Nothing reaches production from a notebook |
+| 4–5 | Production code | **Tighter**: plan first, tests required | Plan approval; the Stop hook won't let Claude finish until tests pass |
+| 6 | Production incident | **Tightest**: read-only diagnosis, a person applies the fix | `/incident` reads only; commands allowlisted; destructive ones denied |
+
+**Run order: overlap, don't wait.** One presenter supervising several agents is the point:
+- As soon as stage 4 *publishes* (the payload is in the bucket), switch to `swe` and approve the
+  stage 5 plan; narrate stage 4's tests and package while the dashboard builds in the browser.
+- While stage 5 builds, stage the incident off-screen (`bash scripts/simulate-incident.sh`).
+- Running two sessions at once doubles the model load: keep the DS stages on Vertex once quota allows,
+  so Bedrock only carries stages 5–6 (avoids 429 throttling).
 
 ---
 
@@ -42,6 +59,16 @@ The stage needs no web search, so it behaves the same on either cloud.
 - [ ] `go version` works (stage 6's freshness check is Go); `bash scripts/simulate-incident.sh` dry run done
 - [ ] In rehearsal, open `sre` in `../fintechco-prod` once and approve the Jupyter MCP prompt (or choose
       "continue without"), so it doesn't pop up on stage
+- [ ] Stop hook wired in `.claude/settings.json` (`Stop` → `.claude/hooks/verify_on_stop.py`, see README);
+      a quick check: ask `swe` to add a comment to `dashboard/src/lib/format.ts` and watch for
+      "Verified: Dashboard tests pass"
+- [ ] Stage 6 runs with no approval prompts: `/incident` only reads files, step 4 uses `!`. If prompts
+      still appear, add the allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
+      copies it into production): `Bash(bash ops/ingest.sh:*)`, `Bash(ops/.bin/freshness:*)`,
+      `Bash(go build:*)`, `Bash(go test:*)`, `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`,
+      `Bash(cat:*)`, `Bash(tail:*)`, `Bash(head:*)`, `Bash(grep:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
+      `Bash(git log:*)`, `Bash(git show:*)`, `Bash(git status:*)`
+- [ ] `PYTHON=$(which python)` in `.env` (the job and Claude's re-run use it)
 - [ ] Backup recordings open in a hidden tab
 - [ ] Font size up, notifications off, `.env` closed
 
@@ -55,10 +82,15 @@ In the `ds` terminal: `/status`
 If DS is on Bedrock that day: show `/status` in `ds` and say "this one could just as well point at
 Vertex — it's one environment variable", then move on.
 
-Open `CLAUDE.md` for 10 seconds:
-> "This is the team's shared context: conventions, data rules, guardrails. Every persona reads it."
+Open `CLAUDE.md` for 10 seconds, then `.claude/settings.json`'s hooks:
+> "This is the team's shared context: conventions, data rules, guardrails. Every persona reads it.
+> And it's enforced: one hook blocks secrets and card numbers from ever being written; another won't
+> let Claude say it's done until the tests pass. That's the self-verifying loop Anthropic's own
+> Claude Code team uses."
 
 ## 1 · Acquire (2:00) — `ds`
+> Dial: **open**. "It's a notebook. I'm going to let it explore."
+
 **Type:** `/acquire`
 <details><summary>Full prompt</summary>
 
@@ -128,6 +160,9 @@ it explained *why* in economic terms. That's the difference between a code gener
 **Scoreboard:** "Data → defensible stress view: typical 2–3 days → elapsed ~7 min."
 
 ## 4 · Graduate & publish (1:30) — `ds`
+> Dial: **tighter**. "Now it's production code, so the rules change: tests are required, and the hook
+> enforces it."
+
 **Type:** `/graduate`
 <details><summary>Full prompt</summary>
 
@@ -142,8 +177,12 @@ stress payload through risk_model.storage, and run the tests.
 
 **Fallback / time-saver:** if over time, `scripts/demo-reset.sh s2-done` and show the finished package
 and green tests.
-**Point out:** notebook → tested code is the handoff that usually takes a sprint. The published payload
-in GCS is what SWE builds on next.
+**Point out:** notebook → tested code is the handoff that usually takes a sprint. When Claude finishes,
+the hook's *"Verified: Python tests pass"* line appears without anyone asking. The published payload in
+GCS is what SWE builds on next.
+
+**Overlap:** as soon as the publish step is done, switch to `swe` and start stage 5 (resume + approve);
+come back to this terminal to walk through the package and tests while the dashboard builds.
 
 ## 5 · Dashboard (3:00) — `swe` · Bedrock
 Switch to the `swe` terminal and put the browser beside it, open on the dashboard. Its empty
@@ -153,6 +192,8 @@ Switch to the `swe` terminal and put the browser beside it, open on the dashboar
 ```
 swe --resume <PLAN_SESSION_ID> --fork-session
 ```
+> Dial: **tighter**. "Production front-end: plan first, a person approves, tests prove it."
+
 Scroll the plan for ~15s: "here's exactly what it intends to change; nothing happens until a person
 approves." Approve with auto-accept edits. (If the approve buttons don't reappear after resume:
 Shift+Tab out of plan mode and type `Approved, implement the plan.`)
@@ -188,6 +229,7 @@ TypeScript matches the scenarios the Python model published.
   both charts move together.
 - The parity tests: TypeScript reproduces the Python model's published scenarios to 3 decimals.
   "The dashboard can't quietly disagree with the model. A test fails first."
+- The hook's *"Verified: Dashboard tests pass"* line when Claude finishes: no one had to ask.
 
 **Expected:** at +2 points, peak impact ≈ +1.9 to +2.2 points of charge-offs in 2027 Q4 (matches stage 3).
 **Speed knob:** `/effort low` before approving (the plan is already done; the coding goes faster).
@@ -198,68 +240,76 @@ demo the finished panel.
 **Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
-## 6 · Incident & fix (3:00) — `sre` · Bedrock
-**Set the scene (off-screen, before stage 6):** run `bash scripts/simulate-incident.sh` in a spare tab
-(~10s; e.g. while stage 5 builds). It prints one line when the incident is staged, or exactly what's
-missing (bucket, Go, seed data). `-v` shows each step. **Your demo folder is not touched**: production is a separate
-checkout at `../fintechco-prod` (a git worktree at `s3-done`) that publishes to the same place the
-dashboard reads. The script runs production's nightly job the way it runs after a key rotation (no
-`FRED_API_KEY`), then the freshness check.
+## 6 · Incident & fix (2:00) — `sre` · Bedrock, in `../fintechco-prod`
+**Off-screen, before stage 6:** `bash scripts/simulate-incident.sh` (~10s; e.g. while stage 5 builds).
+It prints one line when the incident is staged, or exactly what's missing. Your demo folder is not
+touched: production is a separate checkout at `../fintechco-prod` that publishes where the dashboard
+reads. Have the `sre` terminal ready in that folder, already at low effort:
+`cd ../fintechco-prod && sre --permission-mode acceptEdits`, then `/effort low`.
 
+> Dial: **tightest**. "Production at 2 a.m.: read-only diagnosis; a person decides the fix."
+
+**1 · Kick off the diagnosis first (5s).** Type `/incident` *before* you start talking, so Claude
+works while you set the scene.
+
+**2 · The page, while it works (40s).**
 > "Fast-forward three weeks. It's 2 a.m. and the freshness check just paged SRE."
 
-Show the alert (`cat ../fintechco-prod/ops/logs/alert.txt`), then reload the dashboard: it says
-*FRED data through 2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk
-numbers that look fresh are worse than an outage."
+`cat ../fintechco-prod/ops/logs/alert.txt` (in a second tab), then reload the dashboard (Cmd+R): *FRED
+data through 2025 Q4*. "Nothing looks broken. The job reported success. For a bank, stale risk numbers
+that look fresh are worse than an outage."
 
-In the `sre` terminal: `cd ../fintechco-prod && sre` (the persona runs Claude in whichever checkout
-you're in). "This is production, not my laptop."
+**3 · Root cause (30s).** Read Claude's bullets: the job log says
+`Live FRED unavailable (FRED_API_KEY is not set); falling back to seed data`; the fallback Data Science
+added in stage 1 (sensible in a notebook) let a keyless nightly job publish 2025 data and exit 0.
+- "One alert in, root cause out, reading a shell job, Python and Go together. One team's sensible
+  choice became another team's incident. That's why it's one tool across all three teams."
 
-**Type:** `/incident` in the `sre` terminal
-<details><summary>Full prompt</summary>
+**3b · What Risk is seeing (20s).** Take a screenshot of the stale dashboard (Cmd+Shift+4), paste it into
+the `sre` prompt (Ctrl+V, or drag the file in) and ask:
+`This is what Risk sees right now. Which numbers are wrong, and what will they show after the fix?`
+Claude reads the screenshot (*data through 2025 Q4*) and ties it back to the root cause: the incident
+from the business's point of view, the way Anthropic's Data Infrastructure team diagnoses from
+dashboard screenshots.
+
+**4 · The fix, confirmed live (30s).** "Here's the fix the team merged: production fails loudly,
+payloads record where their data came from, a regression test, and a runbook section." In the Claude
+prompt (`!` runs the shell directly, no model, no approval):
+```
+! bash scripts/apply-fix.sh
+```
+It puts production on `s4-done`, shows the fix's summary and files, re-runs the job and the check:
+→ `data source: live` … `ingest finished: OK` … `OK stress-payload-fresh`. Reload the dashboard: back
+to the current quarter.
+
+**5 · Guardrails (15s, while the job runs).** SRE pre-approved read-only and ops commands; anything
+else still asks; `rm -rf` and force-push are denied outright. True story: while building this demo,
+Claude's own safety check blocked a force-push of shared git tags and handed it back to a human.
+
+<details><summary>What /incident asks for</summary>
 
 ```
-We just got paged: the freshness check is failing (the alert is in ops/logs/alert.txt), yet last
-night's ingest job reported success. Investigate using the job logs in ops/logs/ and the code, and
-find the root cause. Fix it so this can't fail silently again, add a regression test, and update
-ops/RUNBOOK.md. Then re-run the ingest job and the freshness check to confirm we're healthy.
+We just got paged: the freshness check is failing, yet last night's ingest job reported success.
+Read ops/logs/alert.txt and ops/logs/ingest-latest.log (last night's run), then follow what the
+log says into the code. Use only file reads and searches: don't run shell commands, don't read tests
+or the dashboard, and don't change anything. Answer in five short bullets or fewer: what happened, why the job looked
+green, and the fix you'd make.
 ```
 </details>
 
-**What happens (rehearsed):** Claude reads the alert and the job log, finds
-`WARNING Live FRED unavailable (FRED_API_KEY is not set); falling back to seed data`, traces it to
-the seed fallback in `risk_model` (the one Data Science added in stage 1, sensible in a notebook,
-dangerous in a nightly job), and fixes it: fallback becomes opt-in for dev only, the job fails
-loudly, payloads record `data_source`, plus a regression test and a new runbook section. It re-runs
-the job (with the key in its environment, so `data source: live`) and the freshness check prints `OK`.
-Reload the dashboard: back to the current quarter.
+**Optional, only if ahead of time:** have Claude write the fix live with `/incident-fix` (minimal fix
+plus one regression test; ~1–2 min at low effort) instead of step 4's reset, then run
+`! bash ops/ingest.sh && ops/.bin/freshness`. Or a headless review from a shell in `../fintechco-prod`:
+`git diff s3-done s4-done | sre -p "Review this diff as a senior SRE. Five bullets max."`
 
-**Point out:**
-- One alert in, root cause out, by reading a shell job, Python and Go together. "One team's sensible
-  choice became another team's incident. That's why it's one tool across all three teams."
-- It fixed the class of bug, not the instance: tests, runbook, and the rule in CLAUDE.md, so nobody
-  reintroduces it (stage 1's "fall back to seed" rule now says "dev only").
-- Guardrails while it works: commands it runs ask first (or follow the allowlist in
-  `.claude/settings.json`); destructive ones like `rm -rf` and force-push are denied outright.
-  (Rehearsal tip: approve stage 6's routine commands with "Yes, and don't ask again" so they're
-  allowlisted in `.claude/settings.local.json` and don't interrupt the live run.)
-  True story to tell: while building this demo, Claude's own safety check blocked a force-push of
-  shared git tags and handed it back to a human.
-
-**Ship it (30s):** headless review of the fix, same as it would run in CI. Exit the session, then:
-```
-cd ../fintechco-prod && git diff s3-done | sre -p "Review this diff as a senior SRE: correctness, failure modes, and anything that could page us again. Five bullets max."
-```
-"That's the same agent running non-interactively, in CI on every PR, through your Bedrock account."
-
-**Fallback:** in `../fintechco-prod`: `git reset --hard s4-done`, then show `git show --stat HEAD`,
-`python -m pytest -q` and the new runbook section. (Your demo folder is still untouched.) Re-running the job needs the live FRED API; if the venue network is down,
-say so: the job now *fails loudly*, which is the point.
-**Scoreboard:** "Page to verified fix, with test and runbook: typical 2–4 hours → elapsed ~3 min."
+**Fallback:** if the diagnosis is still running after ~60s, go straight to step 4; the reset to
+`s4-done` and the `OK` tell the story. Re-running the job needs the live FRED API; if the venue
+network is down, the job now *fails loudly*, which is the point.
+**Scoreboard:** "Page to root cause: typical an hour of log-diving → elapsed under a minute."
 
 **Talk track (closing the demo):** "One request from Risk, three teams, two clouds, one tool:
-a model in the morning, a product by lunch, and when it broke at 2 a.m., fixed with a test and a
-runbook before anyone was fully awake. That's what we'd measure in your pilot."
+a model in the morning, a product by lunch, and when it broke at 2 a.m., the root cause in under a
+minute and a fix with a test before anyone was fully awake. That's what we'd measure in your pilot."
 
 ---
 

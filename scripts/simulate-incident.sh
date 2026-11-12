@@ -97,6 +97,7 @@ PY
     fail "the nightly job failed instead of quietly succeeding (exit $rc). Last lines of $prod/$log:
 $(tail -3 "$log" 2>/dev/null)"
   fi
+  cp "$log" ops/logs/ingest-latest.log   # fixed name, so /incident can read it without running ls
   say "  nightly job exit code: 0 (log: $log)"
 
   # 4. Monitoring: the freshness check must page.
