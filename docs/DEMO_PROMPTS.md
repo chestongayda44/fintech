@@ -93,7 +93,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 🟢 **Site Reliability**, via Amazon Bedrock
 
-> We just got paged: the freshness check is failing, yet last night's ingest job reported success. Read ops/logs/alert.txt and ops/logs/ingest-latest.log (last night's run), then follow what the log says into the code. **Use only file reads and searches**: don't run shell commands, don't read tests or the dashboard, and **don't change anything**. Answer in five short bullets or fewer: what happened, why the job looked green, and the fix you'd make.
+> We just got paged: the freshness check is failing, yet last night's ingest job reported success. Read ops/logs/alert.txt and ops/logs/ingest-latest.log, then follow what the log says into the code. Don't read tests, the dashboard or git history, and **don't change anything**. Answer in exactly three bullets of one sentence each: what happened, why the job looked green, and the fix.
 
 **Supervision:** Tightest: diagnosis is read-only.  
 **Security:** Least privilege: it investigates production without being able to change it.

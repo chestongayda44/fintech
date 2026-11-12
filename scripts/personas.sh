@@ -83,5 +83,5 @@ sre() {
   : "${AWS_REGION:?set AWS_REGION in .env}"
   _title "SRE · Claude via Bedrock"
   echo -e "\033[1;32m▶ SRE — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  _launch sre "$@"
+  _launch sre --disallowedTools Bash "$@"
 }
