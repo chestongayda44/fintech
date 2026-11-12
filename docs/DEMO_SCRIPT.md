@@ -42,7 +42,9 @@ The stage needs no web search, so it behaves the same on either cloud.
 - [ ] `go version` works (stage 6's freshness check is Go); `bash scripts/simulate-incident.sh` dry run done
 - [ ] In rehearsal, open `sre` in `../fintechco-prod` once and approve the Jupyter MCP prompt (or choose
       "continue without"), so it doesn't pop up on stage
-- [ ] Stage 6 allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
+- [ ] Stage 6 runs with no approval prompts: `/incident` only reads files, step 4 uses `!`. If prompts
+      still appear, use auto mode (Shift+Tab in the `sre` session) or add the
+      allowlist in `.claude/settings.local.json` (personal, not committed; the incident script
       copies it into production): `Bash(bash ops/ingest.sh:*)`, `Bash(ops/.bin/freshness:*)`,
       `Bash(go build:*)`, `Bash(go test:*)`, `Bash(python -m pytest:*)`, `Bash(python3 -m pytest:*)`,
       `Bash(cat:*)`, `Bash(tail:*)`, `Bash(head:*)`, `Bash(grep:*)`, `Bash(ls:*)`, `Bash(git diff:*)`,
@@ -245,9 +247,9 @@ Claude's own safety check blocked a force-push of shared git tags and handed it 
 
 ```
 We just got paged: the freshness check is failing, yet last night's ingest job reported success.
-Start from ops/logs/alert.txt and the newest ops/logs/ingest-*.log, then follow what the log says
-into the code. Read only what you need; don't run anything, don't read tests or the dashboard, and
-don't change anything. Answer in five short bullets or fewer: what happened, why the job looked
+Read ops/logs/alert.txt and ops/logs/ingest-latest.log (last night's run), then follow what the
+log says into the code. Use only file reads and searches: don't run shell commands, don't read tests
+or the dashboard, and don't change anything. Answer in five short bullets or fewer: what happened, why the job looked
 green, and the fix you'd make.
 ```
 </details>
