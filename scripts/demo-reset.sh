@@ -40,6 +40,7 @@ main() {
   fi
   rm -rf "$keep"
 
+
   # Restore the known-good dataset in the bucket so later stages always have data.
   if [[ -f .env ]]; then set -a; source .env; set +a; fi
   if [[ "${DATA_SOURCE:-local}" == "gcs" && -n "${GCS_BUCKET:-}" ]] && command -v gcloud >/dev/null; then
