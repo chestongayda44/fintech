@@ -40,6 +40,9 @@ main() {
   fi
   rm -rf "$keep"
 
+  # A full run starts a fresh cost ledger (scripts/cost-report.py totals this run only).
+  if [[ "$target" == "s1-start" ]]; then rm -rf .claude/cost-ledger; fi
+
 
   # Restore the known-good dataset in the bucket so later stages always have data.
   if [[ -f .env ]]; then set -a; source .env; set +a; fi
