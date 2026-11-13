@@ -100,6 +100,25 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ---
 
+## 6 · The page
+
+🟢 **Site Reliability**
+
+```
+bash scripts/simulate-incident.sh
+```
+
+```
+cd ~/Downloads/fintechco-prod && sre
+```
+
+**Result:** Production's nightly job quietly publishes stale data and still reports success. The dashboard drops back to 2025 Q4, and the freshness check pages.
+
+**Supervision:** Production runs in its own checkout, separate from the teams' work.  
+**Security:** The SRE agent in production has no shell: it can read code and logs, nothing more.
+
+---
+
 ## 6 · `/incident`
 
 🟢 **Site Reliability**
@@ -108,6 +127,21 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 **Supervision:** Tightest: diagnosis is read-only.  
 **Security:** Least privilege: it investigates production without being able to change it.
+
+---
+
+## 6 · The fix goes in
+
+🟢 **Site Reliability**
+
+```
+bash scripts/apply-fix.sh
+```
+
+**Result:** A person applies the team's reviewed fix; the nightly job re-runs, the freshness check passes, and the dashboard is back on the latest quarter.
+
+**Supervision:** Tightest: a person applies the fix.  
+**Security:** Claude proposed; a person decided.
 
 ---
 
@@ -124,21 +158,6 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ---
 
-## 6 · The fix goes in
-
-🟢 **Site Reliability**
-
-```
-bash scripts/apply-fix.sh
-```
-
-**Result:** A person applies the team's reviewed fix; the nightly job re-runs and the freshness check passes.
-
-**Supervision:** Tightest: a person applies the fix.  
-**Security:** Claude proposed; a person decided.
-
----
-
 ## 6 · What it cost
 
 **Every team**
@@ -147,7 +166,7 @@ bash scripts/apply-fix.sh
 python3 scripts/cost-report.py
 ```
 
-**Result:** Model cost for the whole flow, per team. The authoritative figure is in your AWS and GCP bills.
+**Result:** Model cost for the whole flow, per team. In your setup, the authoritative figure is in your AWS or GCP bill.
 
 **Supervision:** Cost visible per session and per team.  
 **Security:** Spend lands in your own cloud billing, under your budgets and alerts.
