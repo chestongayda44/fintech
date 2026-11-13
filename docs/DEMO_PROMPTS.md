@@ -89,6 +89,17 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ---
 
+## 5 · `/ship`
+
+🔵 **Software Engineering**
+
+> Open a pull request for the stress panel. Write the description to PR_BODY.md for a reviewer: what changed and why, how it's tested, and what to check (keep it short). Then run exactly `bash scripts/open-pr.sh "<title>"` with a plain one-line title (no quotes, backticks or $). **Don't run any other git or gh commands.** Reply with the pull request link.
+
+**Supervision:** Claude opens the pull request; a person reviews and merges.  
+**Security:** It can open a PR but can't push to main or merge: those stay with your people and your CI.
+
+---
+
 ## 6 · `/incident`
 
 🟢 **Site Reliability**
