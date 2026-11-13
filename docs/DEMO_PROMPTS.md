@@ -6,7 +6,7 @@ Each slash command typed in the terminal sends Claude the request shown under it
 
 ## 0 · Guardrails, live
 
-🔵 **Software Engineering**, via Amazon Bedrock
+🔵 **Software Engineering**
 
 ```
 What's in the .env file?
@@ -25,7 +25,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 1 · `/acquire`
 
-🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)
+🟣 **Data Science**
 
 > Risk leadership wants to know how a 2-point rise in US unemployment would hit credit card losses. In the open notebook notebooks/macro_credit_risk.ipynb, search FRED's own catalog (series/search API, **key in the FRED_API_KEY env var**) for credit card delinquency and charge-off rates, the unemployment rate, the fed funds rate and CPI. Pick the best series for each and **justify the choice** by frequency, seasonal adjustment and coverage. Then add a markdown cell documenting the picks and a code cell that pulls them, falling back to data/seed/ if the API fails. Run it and summarise what we got.
 
@@ -36,7 +36,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 2 · `/explore`
 
-🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)
+🟣 **Data Science**
 
 > Align everything to a gap-free quarterly panel (charge-offs and delinquency are quarterly, the rest monthly; average the available months, **at least 2 of 3**), add YoY CPI inflation, then chart unemployment against charge-offs and delinquency, shading the 2008 and 2020 recessions.
 
@@ -47,7 +47,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 3 · `/fit-model`
 
-🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)
+🟣 **Data Science**
 
 > Fit a simple, interpretable model of how unemployment drives our card losses, using delinquency on its own lag plus lagged unemployment and fed funds, from 2000 onward, with HAC standard errors. **Sanity-check it before going further.**
 
@@ -58,7 +58,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 3 · `/fix-model`
 
-🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)
+🟣 **Data Science**
 
 > Fix it: model charge-offs on the 1-year change in unemployment, exclude the pandemic quarters, and **show how much that exclusion matters**. Then project 8 quarters under baseline vs. unemployment +2pp ramped over 4 quarters and chart both against history.
 
@@ -69,7 +69,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 4 · `/graduate`
 
-🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)
+🟣 **Data Science**
 
 > Graduate this into the risk_model package **so production doesn't depend on the notebook**: typed functions for fetching, quarterly transforms, the model and the projection, plus **pytest tests** (including the "." missing-value case, the ≥2-of-3-months rule and gap-free lags). Follow docs/DATA_CONTRACT.md, publish the panel and stress payload through risk_model.storage, and run the tests with exactly `python -m pytest -q` from the repo root (no `cd` or pipes).
 
@@ -80,7 +80,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 5 · `/stress-panel`
 
-🔵 **Software Engineering**, via Amazon Bedrock
+🔵 **Software Engineering**
 
 > Risk leadership wants to explore this themselves. In dashboard/, fill the empty "Stress scenarios" slot with a stress panel: a slider for an unemployment rise from 0 to 5 points (phased in over a year), the no-shock and stressed charge-off paths against recent history, and a one-sentence headline with the peak impact. Compute projections in the browser from the published payload, following the projection rule in docs/DATA_CONTRACT.md, and add **Vitest tests proving the TypeScript matches** the scenarios the Python model published. Run the tests with exactly `npm test --prefix dashboard` from the repo root (no `cd`, `npx` or pipes).
 
@@ -91,7 +91,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 6 · `/incident`
 
-🟢 **Site Reliability**, via Amazon Bedrock
+🟢 **Site Reliability**
 
 > We just got paged: the freshness check is failing, yet last night's ingest job reported success. Read ops/logs/alert.txt and ops/logs/ingest-latest.log, then follow what the log says into the code. Don't read tests, the dashboard or git history, and **don't change anything**. Answer in exactly three bullets of one sentence each: what happened, why the job looked green, and the fix.
 
@@ -102,7 +102,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 6 · `/sweep`
 
-🟢 **Site Reliability**, via Amazon Bedrock
+🟢 **Site Reliability**
 
 > We fixed the silent fallback in the risk pipeline. Do we have the same problem, or related security issues, anywhere else? Sweep every service under services/ using the fleet-reviewer subagent, running several in parallel (split the services into groups of about four). **Don't change anything.**
 >
@@ -115,7 +115,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ## 6 · The fix goes in
 
-🟢 **Site Reliability**, via Amazon Bedrock
+🟢 **Site Reliability**
 
 ```
 bash scripts/apply-fix.sh

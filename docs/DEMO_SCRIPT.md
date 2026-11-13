@@ -61,6 +61,9 @@ The demo runs one model throughout; model choice per task is a talk-track point 
 ---
 
 ## Pre-flight (before the meeting)
+- [ ] Every terminal tab: `source scripts/personas.sh` (or once: add it to ~/.zshrc)
+- [ ] To start: close the JupyterLab browser tab, then `jump` (stops Jupyter, resets, restarts it)
+- [ ] Persona banners say "via Anthropic API (Pro subscription)"; `bedrock` / `vertex` + `/status` for the cloud check
 - [ ] `scripts/demo-reset.sh` → on `demo-live` at `s1-start`
 - [ ] `scripts/start-jupyter.sh` running (loads `.env`, so the kernel has `FRED_API_KEY` and the token matches the MCP)
 - [ ] Notebook open; **File → Reload Notebook from Disk**; kernel restarted
@@ -220,7 +223,7 @@ what your model risk team (and the Fed's SR 11-7 guidance) asks for."
 > Dial: **tighter**. "Now it's production code, so the rules change: tests are required, and the hook
 > enforces it."
 
-**Type:** `/graduate`
+**Type:** `/effort low`, then `/graduate`, then switch tabs and start stage 5 right away (graduate takes ~3 min; come back for "Verified: Python tests pass").
 <details><summary>Full prompt</summary>
 
 ```
@@ -245,12 +248,14 @@ cloud."
 **Overlap:** as soon as the publish step is done, switch to `swe` and start stage 5 (resume + approve);
 come back to this terminal to walk through the package and tests while the dashboard builds.
 
-## 5 · Dashboard (3:00) — `swe` · Bedrock
+## 5 · Dashboard (3:00) — `swe` · 
 Switch to the `swe` terminal and put the browser beside it, open on the dashboard. Its empty
 "Stress scenarios" slot is the ticket.
 
 **On stage: resume the pre-planned session (the plan appears instantly)**
 ```
+Live: `swe-plan` then `/stress-panel` (starts in plan mode: nothing changes until you approve the plan).
+Shortcut, if a plan is recorded:
 swe --resume <PLAN_SESSION_ID> --fork-session
 ```
 > Dial: **tighter**. "Production front-end: plan first, a person approves, tests prove it."
@@ -304,12 +309,14 @@ demo the finished panel.
 **Talk track:** "That's the handoff that usually takes a sprint: a data scientist's notebook is now a
 product your CRO can use, built by an engineer in their own stack, checked against the model."
 
-## 6 · Incident, fix & fleet sweep (3:00) — `sre` · Bedrock, in `../fintechco-prod`
+## 6 · Incident, fix & fleet sweep (3:00) — `sre`, in `../fintechco-prod`
 **Off-screen, before stage 6:** `bash scripts/simulate-incident.sh` (~10s; e.g. while stage 5 builds).
 It prints one line when the incident is staged, or exactly what's missing. Your demo folder is not
 touched: production is a separate checkout at `../fintechco-prod` that publishes where the dashboard
 reads. Have the `sre` terminal ready in that folder, already at low effort:
-`cd ../fintechco-prod && sre --permission-mode acceptEdits`, then `/effort low`.
+`cd ~/Downloads/fintechco-prod && source ~/Downloads/fintechco-demo/scripts/personas.sh && sre`, then `/effort low`.
+After staging: File → Add Folder to Workspace → ~/Downloads/fintechco-prod (to show alert.txt, ops/freshness/main.go, fred_client.py).
+Order: `/incident` → `bash scripts/apply-fix.sh` in a second tab + reload dashboard (2025 → 2026) → `/sweep`.
 
 > Dial: **tightest**. "Production at 2 a.m.: read-only diagnosis; a person decides the fix."
 
@@ -414,3 +421,5 @@ That's what we'd measure in your pilot."
 | Cloud auth prompt | Switch `DATA_SOURCE=local` (in `.env`, restart persona) |
 | Stage 6 re-run can't reach FRED | That's the fix working: the job fails loudly. Show the tests and runbook instead |
 | Anything else | Play the stage recording, narrate over it |
+| Stage 4 or 5 running long | `jump s3-done` in another tab (close the Jupyter tab first), carry on with the next stage |
+| Need to restart a stage | `jump s2-done` (graduate) or `jump s3-done` (dashboard) |

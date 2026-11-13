@@ -16,9 +16,9 @@ OUT = ROOT / "docs" / "DEMO_PROMPTS.md"
 
 # Circle colours match each persona's banner colour in the terminal.
 TEAMS = {
-    "ds": "🟣 **Data Science**, via Google Vertex AI (or Amazon Bedrock)",
-    "swe": "🔵 **Software Engineering**, via Amazon Bedrock",
-    "sre": "🟢 **Site Reliability**, via Amazon Bedrock",
+    "ds": "🟣 **Data Science**",
+    "swe": "🔵 **Software Engineering**",
+    "sre": "🟢 **Site Reliability**",
     "all": "**Every team**",
 }
 
