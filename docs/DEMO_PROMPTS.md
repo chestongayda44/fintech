@@ -100,7 +100,7 @@ Add a sample transaction with card number 4111 1111 1111 1111 to dashboard/src/t
 
 ---
 
-## 6 · The page
+## 6 · The Incident
 
 🟢 **Site Reliability**
 
@@ -111,11 +111,6 @@ bash scripts/simulate-incident.sh
 ```
 cd ~/Downloads/fintechco-prod && sre
 ```
-
-**Result:** Production's nightly job quietly publishes stale data and still reports success. The dashboard drops back to 2025 Q4, and the freshness check pages.
-
-**Supervision:** Production runs in its own checkout, separate from the teams' work.  
-**Security:** The SRE agent in production has no shell: it can read code and logs, nothing more.
 
 ---
 
