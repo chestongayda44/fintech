@@ -118,7 +118,7 @@ swe-plan() {
 
 # Jump to a checkpoint in one step: stops JupyterLab, resets, restarts JupyterLab in the background.
 #   jump            -> start of the demo (s1-start)
-#   jump s2-done    -> ready for /graduate      jump s3-done -> ready for the dashboard
+#   jump s2-done    -> ready for the dashboard (stage 5)    jump s3-done -> ready for stage 6
 jump() {
   local target="${1:-s1-start}"
   pkill -f "jupyter-lab|jupyter lab" 2>/dev/null && sleep 2
