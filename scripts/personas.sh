@@ -125,4 +125,5 @@ jump() {
   (cd "$_repo_root" && FORCE=1 scripts/demo-reset.sh "$target") || return 1
   (cd "$_repo_root" && nohup scripts/start-jupyter.sh > /tmp/jupyter-demo.log 2>&1 &)
   sleep 3
-  echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old
+    echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old one).\033[0m"
+}
