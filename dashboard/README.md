@@ -14,5 +14,6 @@ The dev server serves the payload at `/api/stress_payload.json` from the same pl
 publishes it: `gs://$GCS_BUCKET/$GCS_PREFIX/` when `DATA_SOURCE=gcs` (via `gcloud storage cat`), otherwise
 `../data/published/`. Load `.env` first (the `swe` persona does this).
 
-Starting state for the live demo: data loading, history charts, model notes, and an empty
-"Stress scenarios" slot. Live task: build the stress panel in that slot (see docs/DEMO_SCRIPT.md, stage 5).
+The "Stress scenarios" panel (`src/components/StressPanel.tsx`) recomputes projections in the browser with
+`src/lib/project.ts`, which follows the projection rule in the data contract; `project.test.ts` checks it against
+the scenarios the Python model published.
