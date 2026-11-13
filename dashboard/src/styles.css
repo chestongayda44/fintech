@@ -133,3 +133,11 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Stress panel */
+.stress-controls { display: flex; flex-direction: column; gap: 0.4rem; max-width: 32rem; margin: 0.5rem 0 1rem; }
+.stress-controls label { display: flex; justify-content: space-between; gap: 1rem; color: var(--ink-2); }
+.stress-controls output { color: var(--shock); font-weight: 600; font-variant-numeric: tabular-nums; }
+.stress-controls input[type="range"] { accent-color: var(--shock); width: 100%; }
+.headline { font-size: 1.15rem; line-height: 1.45; max-width: 44rem; }
+.headline .is-shock { color: var(--shock); }
