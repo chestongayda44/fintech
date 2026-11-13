@@ -128,4 +128,10 @@ jump() {
   sleep 3
   echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old one).\033[0m"
 }
+# Leave the demo and go back to main to edit (discards the demo run's output, not your commits).
+tomain() {
+  pkill -f "jupyter-lab|jupyter lab" 2>/dev/null
+  (cd "$_repo_root" && FORCE=1 scripts/demo-reset.sh >/dev/null) || return 1
+  cd "$_repo_root" && git checkout -q main && echo "On main: edit, commit, push, update-checkpoints, then jump."
+}
 
