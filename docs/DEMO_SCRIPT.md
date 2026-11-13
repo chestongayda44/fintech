@@ -11,15 +11,17 @@ across three teams, in one tool.
 
 **Screen layout:** left = JupyterLab (notebook visible), right = terminal(s). Scoreboard overlay in a corner.
 
-| # | Stage | Persona / cloud | Time | Checkpoint |
-|---|---|---|---|---|
-| 0 | Setup proof | all | 0:30 | — |
-| 1 | Acquire | `ds` · Vertex* | 2:00 | `s1-start` |
-| 2 | Clean & explore | `ds` · Vertex* | 1:00 | |
-| 3 | Model & stress | `ds` · Vertex* | 2:30 | |
-| 4 | Graduate & publish | `ds` · Vertex* | 1:30 | `s2-done` |
-| 5 | Dashboard | `swe` · Bedrock | 3:00 | `s3-done` |
-| 6 | Incident, fix & fleet sweep | `sre` · Bedrock | 3:00 | `s4-done` |
+| # | Stage | Persona | Time | Start with | Ends at |
+|---|---|---|---|---|---|
+| 0 | Setup proof | `swe` | 0:30 | `jump` | — |
+| 1 | Acquire | `ds` | 2:00 | `jump` | |
+| 2 | Clean & explore | `ds` | 1:00 | | |
+| 3 | Model & stress | `ds` | 2:30 | | |
+| 4 | Graduate & publish | `ds` | 1:30 | | `s2-done` |
+| 5 | Dashboard | `swe-plan` | 3:00 | `jump s2-done` | `s3-done` |
+| 6 | Incident, fix & fleet sweep | `sre` | 3:00 | `jump s3-done` | `s4-done` |
+
+Personas run on the Anthropic API (Pro); `bedrock` / `vertex` + `/status` show the same tool on a customer cloud.
 
 \* `DS_PROVIDER=bedrock` in `.env` runs the DS stages on Bedrock instead (e.g. while Vertex quota is pending).
 The stage needs no web search, so it behaves the same on either cloud.
@@ -421,5 +423,5 @@ That's what we'd measure in your pilot."
 | Cloud auth prompt | Switch `DATA_SOURCE=local` (in `.env`, restart persona) |
 | Stage 6 re-run can't reach FRED | That's the fix working: the job fails loudly. Show the tests and runbook instead |
 | Anything else | Play the stage recording, narrate over it |
-| Stage 4 or 5 running long | `jump s3-done` in another tab (close the Jupyter tab first), carry on with the next stage |
-| Need to restart a stage | `jump s2-done` (graduate) or `jump s3-done` (dashboard) |
+| Stage 4 running long | `jump s2-done` (graduate already done), carry on with stage 5 |
+| Stage 5 running long | `jump s3-done` (dashboard already built), carry on with stage 6 |
