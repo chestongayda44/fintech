@@ -125,6 +125,15 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 }
 .slot p { margin: 0; }
 
+/* Stress panel */
+.stress-headline { font-family: var(--serif); font-size: 1.375rem; line-height: 1.35; margin: 0 0 16px; max-width: 62ch; }
+.stress-control { max-width: 480px; margin-bottom: 20px; }
+.stress-control label { display: block; margin-bottom: 8px; }
+.stress-control .is-shock { color: var(--shock); font-variant-numeric: tabular-nums; }
+.stress-hint { color: var(--ink-2); font-size: 0.875rem; }
+.stress-control input[type="range"] { width: 100%; accent-color: var(--shock); }
+.stress-scale { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--ink-3); }
+
 @media (max-width: 640px) {
   .page { padding: 20px 16px 48px; }
   .facts { grid-template-columns: 1fr; gap: 2px; }
