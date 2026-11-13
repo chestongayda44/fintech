@@ -123,7 +123,9 @@ jump() {
   local target="${1:-s1-start}"
   pkill -f "jupyter-lab|jupyter lab" 2>/dev/null && sleep 2
   (cd "$_repo_root" && FORCE=1 scripts/demo-reset.sh "$target") || return 1
+  rm -rf "$_repo_root/.jupyter_ystore.db" "$_repo_root/.jupyter"   # JupyterLab's saved copies of open notebooks
   (cd "$_repo_root" && nohup scripts/start-jupyter.sh > /tmp/jupyter-demo.log 2>&1 &)
   sleep 3
-    echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old one).\033[0m"
+  echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old one).\033[0m"
 }
+
