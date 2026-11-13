@@ -109,3 +109,20 @@ vertex() {
   if [[ -n "${VERTEX_MODEL:-}" ]]; then args=(--model "$VERTEX_MODEL"); fi
   _launch gcp "${args[@]}" "$@"
 }
+
+# Stage 5: Software Engineering in plan mode. Claude must present a plan and get approval before
+# changing anything.
+swe-plan() {
+  swe --permission-mode plan "$@"
+}
+
+# Jump to a checkpoint in one step: stops JupyterLab, resets, restarts JupyterLab in the background.
+#   jump            -> start of the demo (s1-start)
+#   jump s2-done    -> ready for /graduate      jump s3-done -> ready for the dashboard
+jump() {
+  local target="${1:-s1-start}"
+  pkill -f "jupyter-lab|jupyter lab" 2>/dev/null && sleep 2
+  (cd "$_repo_root" && FORCE=1 scripts/demo-reset.sh "$target") || return 1
+  (cd "$_repo_root" && nohup scripts/start-jupyter.sh > /tmp/jupyter-demo.log 2>&1 &)
+  sleep 3
+  echo -e "\033[1;33m▶ At $target. JupyterLab restarted: use its new browser tab (close the old
