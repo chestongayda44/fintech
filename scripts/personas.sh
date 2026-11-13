@@ -2,11 +2,8 @@
 # Source this file in each demo terminal:   source scripts/personas.sh
 # Then launch a persona:                    ds | swe | sre
 #
-# Each persona runs Claude Code against a different cloud provider so the
-# audience sees both of FinTechCo's clouds in use:
-#   ds  -> Google Vertex AI   (data science lives on GCP)
-#   swe -> Amazon Bedrock
-#   sre -> Amazon Bedrock
+# Each persona runs on the provider set in .env (DS_PROVIDER / SWE_PROVIDER / SRE_PROVIDER):
+#   anthropic (default), vertex or bedrock.
 # Inside a session, run /status to show the active provider on screen.
 #
 # Every persona shows a status line with model, session cost, time and lines changed, and records
@@ -50,38 +47,65 @@ _launch() {
   (cd "$(_persona_dir)" && claude --settings "$sl" "$@")
 }
 
+# Sets the model provider for a persona: anthropic (default), vertex or bedrock.
+#   anthropic: your Claude Pro sign-in, or Console credits when USE_CREDITS=1 in .env
+_provider_env() {
+  case "$1" in
+    vertex)
+      : "${ANTHROPIC_VERTEX_PROJECT_ID:?set ANTHROPIC_VERTEX_PROJECT_ID in .env}"
+      export CLAUDE_CODE_USE_VERTEX=1
+      _PROVIDER_NAME="Google Vertex AI (${CLOUD_ML_REGION:-global})" ;;
+    bedrock)
+      : "${AWS_REGION:?set AWS_REGION in .env}"
+      export CLAUDE_CODE_USE_BEDROCK=1
+      _PROVIDER_NAME="Amazon Bedrock ($AWS_REGION)" ;;
+    *)
+      if [[ "${USE_CREDITS:-0}" == "1" ]]; then
+        export ANTHROPIC_API_KEY="$CONSOLE_API_KEY"
+        _PROVIDER_NAME="Anthropic API (credits)"
+      else
+        unset ANTHROPIC_API_KEY
+        _PROVIDER_NAME="Anthropic API (Pro subscription)"
+      fi ;;
+  esac
+  _title "$2 · Claude via $_PROVIDER_NAME"
+}
+
 ds() {
   _clear_providers
-  # DS_PROVIDER=vertex (default) or bedrock — flip to bedrock if Vertex quota/access is unavailable.
-  if [[ "${DS_PROVIDER:-vertex}" == "bedrock" ]]; then
-    export CLAUDE_CODE_USE_BEDROCK=1
-    : "${AWS_REGION:?set AWS_REGION in .env}"
-    _title "Data Science · Claude via Bedrock"
-    echo -e "\033[1;35m▶ Data Science — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
-  else
-    export CLAUDE_CODE_USE_VERTEX=1
-    : "${ANTHROPIC_VERTEX_PROJECT_ID:?set ANTHROPIC_VERTEX_PROJECT_ID in .env}"
-    : "${CLOUD_ML_REGION:?set CLOUD_ML_REGION in .env}"
-    _title "Data Science · Claude via Vertex AI"
-    echo -e "\033[1;35m▶ Data Science — Claude Code via Google Vertex AI ($CLOUD_ML_REGION)\033[0m"
-  fi
+  _provider_env "${DS_PROVIDER:-anthropic}" "Data Science"
+  echo -e "\033[1;35m▶ Data Science — Claude Code via $_PROVIDER_NAME\033[0m"
   _launch ds "$@"
 }
 
 swe() {
   _clear_providers
-  export CLAUDE_CODE_USE_BEDROCK=1
-  : "${AWS_REGION:?set AWS_REGION in .env}"
-  _title "Software Engineering · Claude via Bedrock"
-  echo -e "\033[1;34m▶ Software Engineering — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
+  _provider_env "${SWE_PROVIDER:-anthropic}" "Software Engineering"
+  echo -e "\033[1;34m▶ Software Engineering — Claude Code via $_PROVIDER_NAME\033[0m"
   _launch swe "$@"
 }
 
 sre() {
   _clear_providers
-  export CLAUDE_CODE_USE_BEDROCK=1
-  : "${AWS_REGION:?set AWS_REGION in .env}"
-  _title "SRE · Claude via Bedrock"
-  echo -e "\033[1;32m▶ SRE — Claude Code via Amazon Bedrock ($AWS_REGION)\033[0m"
+  _provider_env "${SRE_PROVIDER:-anthropic}" "SRE"
+  echo -e "\033[1;32m▶ SRE — Claude Code via $_PROVIDER_NAME\033[0m"
   _launch sre --disallowedTools Bash "$@"
+}
+
+# Connection checks: open Claude Code on a customer cloud to show /status on stage.
+# Bedrock uses a model this AWS account can call (override with BEDROCK_MODEL in .env).
+bedrock() {
+  _clear_providers
+  _provider_env bedrock "Bedrock check"
+  echo -e "\033[1;33m▶ Claude Code via $_PROVIDER_NAME: type /status to show the connection\033[0m"
+  _launch aws --model "${BEDROCK_MODEL:-us.anthropic.claude-haiku-4-5-20251001-v1:0}" "$@"
+}
+
+vertex() {
+  _clear_providers
+  _provider_env vertex "Vertex check"
+  echo -e "\033[1;33m▶ Claude Code via $_PROVIDER_NAME: type /status to show the connection\033[0m"
+  local args=()
+  if [[ -n "${VERTEX_MODEL:-}" ]]; then args=(--model "$VERTEX_MODEL"); fi
+  _launch gcp "${args[@]}" "$@"
 }
