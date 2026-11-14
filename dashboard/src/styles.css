@@ -133,3 +133,9 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Stress panel */
+.is-shock { color: var(--shock); }
+.stress-control { display: flex; flex-direction: column; gap: 0.5rem; max-width: 32rem; }
+.stress-control input[type="range"] { accent-color: var(--shock); width: 100%; }
+.stress-headline { font-size: 1.15rem; margin: 0.75rem 0 1rem; }
