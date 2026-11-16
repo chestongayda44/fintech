@@ -21,3 +21,13 @@ data/seed/published/
 # JupyterLab collaboration state
 .jupyter_ystore.db
 **/.jupyter/
+
+# Ops runtime state
+ops/logs/
+ops/.prod-cache/
+ops/.bin/
+
+# Demo cost ledger (cost/time/line counts per session; see scripts/cost-report.py)
+.claude/cost-ledger/
+
+PR_BODY.md
