@@ -116,6 +116,14 @@ details.table-view table { border-collapse: collapse; margin-top: 8px; font-vari
 details.table-view th, details.table-view td { text-align: right; padding: 4px 12px; border-bottom: 1px solid var(--grid); }
 details.table-view th:first-child, details.table-view td:first-child { text-align: left; }
 
+/* Stress panel */
+.stress-headline { font-family: var(--serif); font-size: 1.25rem; line-height: 1.4; max-width: 62ch; margin: 0 0 16px; }
+.stress-control { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 16px; }
+.stress-control label { color: var(--ink-2); font-size: 0.9375rem; flex-basis: 100%; }
+.stress-control input[type="range"] { flex: 1 1 240px; max-width: 360px; accent-color: var(--shock); }
+.stress-control input[type="range"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+.stress-control output { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--shock); min-width: 6ch; }
+
 /* Empty / error / placeholder states */
 .state { max-width: 62ch; }
 .state code { font-size: 0.875rem; background: var(--band); padding: 2px 6px; border-radius: 4px; }
