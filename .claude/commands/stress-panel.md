@@ -6,4 +6,5 @@ slot with a stress panel: a slider for an unemployment rise from 0 to 5 points (
 year), the no-shock and stressed charge-off paths against recent history, and a one-sentence
 headline with the peak impact. Compute projections in the browser from the published payload,
 following the projection rule in docs/DATA_CONTRACT.md, and add Vitest tests proving the
-TypeScript matches the scenarios the Python model published.
+TypeScript matches the scenarios the Python model published. Run the tests with exactly
+`npm test --prefix dashboard` from the repo root (no `cd`, `npx` or pipes).

@@ -26,3 +26,8 @@ data/seed/published/
 ops/logs/
 ops/.prod-cache/
 ops/.bin/
+
+# Demo cost ledger (cost/time/line counts per session; see scripts/cost-report.py)
+.claude/cost-ledger/
+
+PR_BODY.md
