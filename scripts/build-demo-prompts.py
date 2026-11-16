@@ -44,7 +44,8 @@ STEPS = [
      "dial": "Open, with a check built in.",
      "security": "Model risk: the model is challenged before anyone relies on it."},
     {"stage": "3", "command": "fix-model", "team": "ds",
-     "bold": ["show how much that exclusion matters"],
+     "display": "Fit the new model and show how much the exclusions matter. Compare it with the first model in one short table, and check its sign before going further; if it fails, say so and stop. Otherwise project 8 quarters under baseline vs. unemployment +2pp ramped over 4 quarters and chart both against history.",
+     "bold": ["show how much the exclusions matter"],
      "dial": "Open, with a check built in.",
      "security": "Model risk: interpretable, documented and validated."},
     {"stage": "4", "command": "graduate", "team": "ds",
@@ -109,7 +110,7 @@ def build() -> str:
         out += ["---", ""]
         if "command" in s:
             out += [f"## {s['stage']} · `/{s['command']}`", "", TEAMS[s["team"]], ""]
-            text = command_body(s["command"])
+            text = s.get("display") or command_body(s["command"])
             for phrase in s.get("bold", []):
                 text = text.replace(phrase, f"**{phrase}**", 1)
             out += ["> " + line if line else ">" for line in text.split("\n")]
