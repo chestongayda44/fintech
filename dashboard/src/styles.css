@@ -133,3 +133,8 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+.shock-control { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; max-width: 420px; }
+.shock-control .is-shock { color: var(--shock); font-variant-numeric: tabular-nums; }
+.shock-control input[type="range"] { accent-color: var(--shock); width: 100%; }
+.shock-control input[type="range"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
