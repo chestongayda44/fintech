@@ -1,7 +1,7 @@
 ---
-description: "Stage 6 (SRE): respond to the freshness page, find the root cause, fix it for good"
+description: "Stage 6 (SRE): diagnose the freshness page fast. Root cause and proposed fix, no changes"
 ---
-We just got paged: the freshness check is failing (the alert is in ops/logs/alert.txt), yet last
-night's ingest job reported success. Investigate using the job logs in ops/logs/ and the code, and
-find the root cause. Fix it so this can't fail silently again, add a regression test, and update
-ops/RUNBOOK.md. Then re-run the ingest job and the freshness check to confirm we're healthy.
+We just got paged: the freshness check is failing, yet last night's ingest job reported success.
+Read ops/logs/alert.txt and ops/logs/ingest-latest.log, then follow what the log says into the
+code. Don't read tests, the dashboard or git history, and don't change anything. Answer in exactly
+three bullets of one sentence each: what happened, why the job looked green, and the fix.

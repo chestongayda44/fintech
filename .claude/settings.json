@@ -1,17 +1,26 @@
 {
-  "permissions": {
+   "permissions": {
     "allow": [
       "mcp__jupyter",
       "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
       "Bash(pytest:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
       "Bash(npm test:*)",
       "Bash(npm run:*)",
       "Bash(go run:*)",
+      "Bash(go build:*)",
       "Bash(go test:*)",
+      "Bash(bash ops/ingest.sh:*)",
+      "Bash(ops/.bin/freshness:*)",
+      "Bash(bash scripts/apply-fix.sh:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
       "WebSearch",
-      "WebFetch(domain:fred.stlouisfed.org)"
+      "WebFetch(domain:fred.stlouisfed.org)",
+        "Bash(bash scripts/open-pr.sh:*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -19,10 +28,17 @@
       "Read(**/.env)",
       "Bash(cat .env:*)",
       "Bash(rm -rf:*)",
-      "Bash(git push --force:*)"
+      "Bash(git push --force:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr merge:*)"
     ]
   },
   "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command",
+      "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify_on_stop.py\"",
+      "timeout": 300 } ] }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
