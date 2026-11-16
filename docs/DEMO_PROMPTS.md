@@ -130,6 +130,21 @@ cd ~/Downloads/fintechco-prod && sre
 
 ---
 
+## 6 · Least privilege, live
+
+🟢 **Site Reliability**
+
+```
+Run the test suite and tell me if it passes.
+```
+
+**Result:** Refused: this session can't run commands, execute code or edit files.
+
+**Supervision:** Tightest: read-only, enforced by the tool.  
+**Security:** The production agent has no shell, no code execution and no edit access.
+
+---
+
 ## 6 · The fix goes in
 
 🟢 **Site Reliability**
