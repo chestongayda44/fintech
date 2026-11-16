@@ -133,3 +133,10 @@ details.table-view th:first-child, details.table-view td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Stress panel */
+.stress-control { display: flex; flex-direction: column; gap: 6px; max-width: 420px; margin: 8px 0 12px; }
+.stress-control label { color: var(--ink-2); font-size: 14px; }
+.stress-control output { color: var(--shock); font-weight: 600; margin-left: 6px; }
+.stress-control input[type="range"] { accent-color: var(--shock); width: 100%; }
+.stress-headline { font-size: 18px; line-height: 1.4; margin: 0 0 16px; }
